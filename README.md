@@ -2,7 +2,7 @@
 
 Windows deployment toolkit for common machine-setup tasks in one GUI:
 
-- Rename the computer, set the `Site Photographer` password, and open Date/Time and Windows Update settings.
+- Rename the computer, set the `Site Photographer` password, set the time zone and sync the clock, and open Windows Update settings.
 - Create, reset and delete SSCT site users, and create the `SharedAdmin` account.
 - Install LogMeIn using a sponsor-specific Deploy ID from a CSV file, enroll in Resolve MDM, and manage the Canfield scripts.
 - Find and run Canfield Capture `setup.exe` installers from USB drives.
@@ -17,7 +17,7 @@ The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe
 - `src\LoadOrder.ps1`: Ordered list of source files to load (also used by the build).
 - `src\lib\`: UI-free helpers (validation, sponsor CSV, USB discovery, Canfield Capture cleanup, local users, status checks).
 - `src\ui\`: Main window and shared progress/message helpers.
-- `src\tabs\`: One file per tab (Computer, Remote Access, Canfield Capture, Cleanup Tool, Summary, Users, Scripts).
+- `src\tabs\`: One file per tab (Computer, Remote Access, Canfield Capture, Users, Cleanup Tool, Summary, Scripts).
 - `Build-Toolkit-Exe.ps1`: Inlines `src\` into the entry script and builds a single `CDT.exe` using PS2EXE.
 - `assets\toolkit.ico`: Icon embedded into the EXE (file icon, window and taskbar). Required by the build.
 - `build_bypass.cmd`: Convenience wrapper to run the build script with execution policy bypass (run it from the repo folder).
@@ -169,6 +169,15 @@ git push origin v1.0.0
 - Asks first if a version of Canfield Capture is already installed.
 - Runs installer and reports result or reboot-required codes.
 
+### Users Tab
+
+- Create site user: first name, last name and optional prefix. The username fills in as first initial + last name (letters only, lower case) and can be edited. The temporary password defaults to `Photo321`. The user is added to the local `SSCT` group (created if missing) and must change the password at first sign-in.
+- If every installed protocol uses SSO, the tab warns that local users are usually not needed and asks before creating one.
+- Lists the local users in the `SSCT` group. Reset Password sets a new temporary password (expired, so it must be changed at next sign-in); Change Name sets the full name.
+- Delete User removes the selected Windows account after a Yes/No that names it. This is the only place the toolkit deletes a user. `Site Photographer`, `SharedAdmin`, `Administrator` and the signed-in account cannot be deleted.
+- Create SharedAdmin Account asks for a password, then creates `SharedAdmin` (password never expires, user cannot change it) in the local Administrators group.
+- Passwords are never stored on disk.
+
 ### Cleanup Tool Tab
 
 Ported from the Cleanup Tool in the Canfield Setup Tool (`CST.ps1`, not included in this repo), like the Users, Remote Access and Summary features.
@@ -184,15 +193,6 @@ Ported from the Cleanup Tool in the Canfield Setup Tool (`CST.ps1`, not included
 - Shows computer name, service tag, model, date and time, time zone, Wi-Fi, BitLocker, LogMeIn, Resolve MDM, installed Canfield Capture versions and the number of site users. Refreshes each time the tab is opened.
 - Lists installed protocols with their version, SSO use, and the Site ID last logged by Canfield Capture (`C:\ProgramData\Canfield\DiagLib`). A cleaned version shows "Not set" until its Site ID is set again.
 - **Save Report** (technician initials required) saves a JPG picture of the window plus a `.txt` with the same name, containing every check, the protocols, initials and comments.
-
-### Users Tab
-
-- Create site user: first name, last name and optional prefix. The username fills in as first initial + last name (letters only, lower case) and can be edited. The temporary password defaults to `Photo321`. The user is added to the local `SSCT` group (created if missing) and must change the password at first sign-in.
-- If every installed protocol uses SSO, the tab warns that local users are usually not needed and asks before creating one.
-- Lists the local users in the `SSCT` group. Reset Password sets a new temporary password (expired, so it must be changed at next sign-in); Change Name sets the full name.
-- Delete User removes the selected Windows account after a Yes/No that names it. This is the only place the toolkit deletes a user. `Site Photographer`, `SharedAdmin`, `Administrator` and the signed-in account cannot be deleted.
-- Create SharedAdmin Account asks for a password, then creates `SharedAdmin` (password never expires, user cannot change it) in the local Administrators group.
-- Passwords are never stored on disk.
 
 ### Scripts Tab
 
