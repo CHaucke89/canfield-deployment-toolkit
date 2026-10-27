@@ -185,6 +185,15 @@ $btnRcg.Add_Click({
         Show-Message "ResponseCodeGenerator.exe was not found on the USB drive.`nInsert the drive and click Scan USB." 'Warning'
         return
     }
-    try { Start-Process -FilePath $exe -WorkingDirectory (Split-Path -Parent $exe) }
+    try {
+        # The generator listens on a named pipe that Canfield Capture writes the request code to.
+        # Launched from this elevated toolkit, the pipe would reject the non-elevated Capture client,
+        # so start it through Explorer, which runs it unelevated as the signed-in desktop user.
+        if (Get-Process -Name explorer -ErrorAction SilentlyContinue) {
+            Start-Process -FilePath "$env:WINDIR\explorer.exe" -ArgumentList ('"{0}"' -f $exe)
+        } else {
+            Start-Process -FilePath $exe -WorkingDirectory (Split-Path -Parent $exe)
+        }
+    }
     catch { Show-Message "Could not open the Response Code Generator:`n$($_.Exception.Message)" 'Error' }
 })
