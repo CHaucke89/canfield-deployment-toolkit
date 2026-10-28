@@ -37,12 +37,38 @@ $legendNew.Location = New-Object System.Drawing.Point(300, 366)
 $legendNew.AutoSize = $true
 $tabUsb.Controls.Add($legendNew)
 
-$btnRcg = New-Object System.Windows.Forms.Button
-$btnRcg.Text     = 'Open Response Code Generator'
-$btnRcg.Location = New-Object System.Drawing.Point(15, 390)
-$btnRcg.Size     = New-Object System.Drawing.Size(200, 30)
-$btnRcg.Enabled  = $false
-$tabUsb.Controls.Add($btnRcg)
+# Response code generator (replaces ResponseCodeGenerator.exe).
+$lblRequest = New-Object System.Windows.Forms.Label
+$lblRequest.Text     = 'Request code:'
+$lblRequest.Location = New-Object System.Drawing.Point(15, 398)
+$lblRequest.AutoSize = $true
+$tabUsb.Controls.Add($lblRequest)
+
+$txtRequest = New-Object System.Windows.Forms.TextBox
+$txtRequest.Location  = New-Object System.Drawing.Point(95, 395)
+$txtRequest.Size      = New-Object System.Drawing.Size(75, 20)
+$txtRequest.MaxLength = 8
+$txtRequest.CharacterCasing = 'Upper'
+$tabUsb.Controls.Add($txtRequest)
+
+$lblResponse = New-Object System.Windows.Forms.Label
+$lblResponse.Text     = 'Response code:'
+$lblResponse.Location = New-Object System.Drawing.Point(180, 398)
+$lblResponse.AutoSize = $true
+$tabUsb.Controls.Add($lblResponse)
+
+$txtResponse = New-Object System.Windows.Forms.TextBox
+$txtResponse.Location = New-Object System.Drawing.Point(265, 395)
+$txtResponse.Size     = New-Object System.Drawing.Size(75, 20)
+$txtResponse.ReadOnly = $true
+$tabUsb.Controls.Add($txtResponse)
+
+$lblAutoFill = New-Object System.Windows.Forms.Label
+$lblAutoFill.Location = New-Object System.Drawing.Point(350, 398)
+$lblAutoFill.Size     = New-Object System.Drawing.Size(120, 18)
+$lblAutoFill.AutoEllipsis = $true
+$tabUsb.Controls.Add($lblAutoFill)
+$autoFillTip = New-Object System.Windows.Forms.ToolTip
 
 $btnUsb = New-Object System.Windows.Forms.Button
 $btnUsb.Text     = 'Install Selected'
@@ -79,14 +105,10 @@ $list.Add_DrawItem({
     [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $item.Display, $e.Font, $bounds, $color, $flags)
     $e.DrawFocusRectangle()
 })
-$script:responseCodeGenerator = $null   # ResponseCodeGenerator.exe found by the last scan
-
 function Invoke-UsbScan {
     $script:usbScanned = $true
     $list.Items.Clear()
     $btnUsb.Enabled = $false
-    $btnRcg.Enabled = $false
-    $script:responseCodeGenerator = $null
 
     Enter-Busy "Looking for USB drives..." $true
     $roots = Get-UsbDriveRoots
@@ -109,8 +131,6 @@ function Invoke-UsbScan {
         else { [System.Windows.Forms.Application]::DoEvents() }
         try {
             if ([System.IO.File]::Exists((Join-Path $dir 'setup.exe'))) { $found.Add($dir) }
-            $rcg = Join-Path $dir 'ResponseCodeGenerator.exe'
-            if (-not $script:responseCodeGenerator -and [System.IO.File]::Exists($rcg)) { $script:responseCodeGenerator = $rcg }
             foreach ($sub in [System.IO.Directory]::EnumerateDirectories($dir)) {
                 if ($skipNames -contains (Split-Path -Leaf $sub)) { continue }
                 # don't follow junctions/symlinks (avoids loops)
@@ -122,7 +142,6 @@ function Invoke-UsbScan {
     $cancelled = $script:cancelRequested
     Exit-Busy
 
-    $btnRcg.Enabled = [bool]$script:responseCodeGenerator
     if ($cancelled) { $usbInfo.Text = 'Scan cancelled.'; return }
     if ($found.Count -eq 0) { $usbInfo.Text = 'No installer found on the USB drive.'; return }
 
@@ -178,22 +197,80 @@ $btnUsb.Add_Click({
     }
 })
 
-$btnRcg.Add_Click({
-    $exe = $script:responseCodeGenerator
-    if (-not $exe -or -not (Test-Path -LiteralPath $exe)) {
-        $btnRcg.Enabled = $false
-        Show-Message "ResponseCodeGenerator.exe was not found on the USB drive.`nInsert the drive and click Scan USB." 'Warning'
-        return
+# Same calculation as ResponseCodeGenerator.exe: the 8-hex-digit request code times 0x1000007B,
+# keeping the low 32 bits. Anything else gives '--------', as the exe did.
+function Get-ResponseCode([string]$request) {
+    $value = [uint32]0
+    if ($request.Length -ne 8 -or
+        -not [uint32]::TryParse($request, 'HexNumber', [System.Globalization.CultureInfo]::InvariantCulture, [ref]$value)) {
+        return '--------'
     }
-    try {
-        # The generator listens on a named pipe that Canfield Capture writes the request code to.
-        # Launched from this elevated toolkit, the pipe would reject the non-elevated Capture client,
-        # so start it through Explorer, which runs it unelevated as the signed-in desktop user.
-        if (Get-Process -Name explorer -ErrorAction SilentlyContinue) {
-            Start-Process -FilePath "$env:WINDIR\explorer.exe" -ArgumentList ('"{0}"' -f $exe)
-        } else {
-            Start-Process -FilePath $exe -WorkingDirectory (Split-Path -Parent $exe)
+    $product = [uint64]$value * [uint64]268435579
+    return '{0:X8}' -f [uint32]($product % [uint64]4294967296)
+}
+
+$txtRequest.Add_TextChanged({ $txtResponse.Text = Get-ResponseCode $txtRequest.Text.Trim() })
+
+# Auto-fill: Canfield Capture connects to the named pipe "CanfieldPipe", writes the request code as one
+# line and reads the response code back as one line. Serve that pipe from a background runspace while the
+# toolkit is open. The toolkit runs elevated, so the pipe gets an explicit DACL; with the default one the
+# non-elevated Capture process can't open it for writing.
+$script:rcgShared = [hashtable]::Synchronized(@{ Stop = $false; State = 'Starting'; Request = $null; Seq = 0 })
+$rcgListener = {
+    param($shared, [string]$computeText)
+    $compute = [scriptblock]::Create($computeText)
+    while (-not $shared.Stop) {
+        $pipe = $null
+        try {
+            $sec = New-Object System.IO.Pipes.PipeSecurity
+            $users = New-Object System.Security.Principal.SecurityIdentifier('S-1-5-11')   # Authenticated Users
+            # CreateNewInstance is included because a client opening with GENERIC_WRITE asks for it.
+            $sec.AddAccessRule((New-Object System.IO.Pipes.PipeAccessRule($users,
+                [System.IO.Pipes.PipeAccessRights]'ReadWrite, CreateNewInstance, Synchronize', 'Allow')))
+            foreach ($sid in 'S-1-5-32-544', 'S-1-5-18') {   # Administrators, SYSTEM
+                $sec.AddAccessRule((New-Object System.IO.Pipes.PipeAccessRule(
+                    (New-Object System.Security.Principal.SecurityIdentifier($sid)), 'FullControl', 'Allow')))
+            }
+            $pipe = New-Object System.IO.Pipes.NamedPipeServerStream('CanfieldPipe', 'InOut', 1, 'Byte',
+                'Asynchronous', 0, 0, $sec)
+            $shared.State = 'Listening'
+            $wait = $pipe.BeginWaitForConnection($null, $null)
+            while (-not $wait.AsyncWaitHandle.WaitOne(500)) { if ($shared.Stop) { return } }
+            $pipe.EndWaitForConnection($wait)
+
+            $reader = New-Object System.IO.StreamReader($pipe)
+            $writer = New-Object System.IO.StreamWriter($pipe)
+            $writer.AutoFlush = $true
+            $request = $reader.ReadLine()
+            $writer.WriteLine((& $compute $request))
+            $pipe.WaitForPipeDrain()
+            $shared.Request = $request
+            $shared.Seq++
+        } catch {
+            # Most likely ResponseCodeGenerator.exe (or a second toolkit) already owns the pipe.
+            $shared.State = 'Off: ' + $_.Exception.Message
+            Start-Sleep -Seconds 3
+        } finally {
+            if ($pipe) { $pipe.Dispose() }
         }
     }
-    catch { Show-Message "Could not open the Response Code Generator:`n$($_.Exception.Message)" 'Error' }
+}
+$rcgPs = [PowerShell]::Create()
+[void]$rcgPs.AddScript($rcgListener).AddArgument($script:rcgShared).AddArgument(${function:Get-ResponseCode}.ToString())
+[void]$rcgPs.BeginInvoke()
+
+# Show listener state and copy a request Capture sent into the boxes (UI thread).
+$script:rcgSeenSeq = 0
+$rcgTimer = New-Object System.Windows.Forms.Timer
+$rcgTimer.Interval = 500
+$rcgTimer.Add_Tick({
+    $state = $script:rcgShared.State
+    $lblAutoFill.Text = if ($state -eq 'Listening') { 'Auto-fill ready' } else { $state }
+    $autoFillTip.SetToolTip($lblAutoFill, $state)
+    if ($script:rcgShared.Seq -ne $script:rcgSeenSeq) {
+        $script:rcgSeenSeq = $script:rcgShared.Seq
+        $txtRequest.Text = $script:rcgShared.Request
+    }
 })
+$rcgTimer.Start()
+$form.Add_FormClosed({ $script:rcgShared.Stop = $true; $rcgTimer.Stop() })
