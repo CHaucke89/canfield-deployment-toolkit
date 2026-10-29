@@ -5,7 +5,7 @@ Windows deployment toolkit for common machine-setup tasks in one GUI:
 - Rename the computer, set the `Site Photographer` password, set the time zone and sync the clock, and open Windows Update settings.
 - Create, reset and delete SSCT site users, and create the `SharedAdmin` account.
 - Install LogMeIn using a sponsor-specific Deploy ID from a CSV file, enroll in Resolve MDM, and manage the Canfield scripts.
-- Find and run Canfield Capture `setup.exe` installers from USB drives.
+- Find and run Canfield Capture `setup.exe` installers from USB drives, or browse to one anywhere else.
 - Clean Canfield Capture site databases, set Site IDs, and force SSCT users to change passwords.
 - Check the machine's status and save a QC report.
 
@@ -163,6 +163,7 @@ git push origin v1.0.0
 ### Canfield Capture Tab
 
 - Scans attached USB drives for folders containing `setup.exe`. The scan runs automatically the first time the tab is opened, can be cancelled, and can be repeated with **Scan USB**.
+- **Browse...** picks a `setup.exe` from anywhere (another folder, network share or drive) when none is on the USB drive, and adds its folder to the list. A new USB scan clears browsed entries.
 - Lets you choose the installer folder; it runs silently with `/S /v/qn`.
 - **Open Response Code Generator** opens `ResponseCodeGenerator.exe` found on the USB drive during the scan (greyed out when none was found).
 - Installers whose version is already installed show in green (a legend under the list explains the colors). The version comes from the installer's folder name or path (for example `v3.6.0`), else from `setup.exe`'s product version, and is matched against `C:\Program Files (x86)\Canfield Scientific Inc\Canfield Capture v*`.
@@ -212,4 +213,4 @@ Ported from the Cleanup Tool in the Canfield Setup Tool (`CST.ps1`, not included
 - EXE missing after workflow run:
   - Check workflow logs and confirm `build/CDT.exe` was produced.
 - Canfield install returns non-zero exit code:
-  - Run that installer's `setup.exe` from the USB drive manually.
+  - Run that installer's `setup.exe` from its folder manually.
