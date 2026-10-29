@@ -50,6 +50,8 @@ $ssoNote.Size      = New-Object System.Drawing.Size(265, 48)
 $ssoNote.Visible   = $false
 $grpCreate.Controls.Add($ssoNote)
 
+foreach ($box in @($userPrefix, $userFirst, $userLast, $userName, $userPass)) { Set-EnterButton $box $btnCreateUser }
+
 $updateUsername = { $userName.Text = ConvertTo-SiteUsername $userFirst.Text $userLast.Text }
 $userFirst.Add_TextChanged($updateUsername)
 $userLast.Add_TextChanged($updateUsername)
