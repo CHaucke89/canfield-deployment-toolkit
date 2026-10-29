@@ -197,8 +197,8 @@ $btnUsb.Add_Click({
     }
 })
 
-# Same calculation as ResponseCodeGenerator.exe: the 8-hex-digit request code times 0x1000007B,
-# keeping the low 32 bits. Anything else gives '--------', as the exe did.
+# Same calculation as ResponseCodeGenerator.exe: the 8-hex-digit request code times 268435579,
+# modulo 4294967291 (0xFFFFFFFB). Anything else gives '--------', as the exe did.
 function Get-ResponseCode([string]$request) {
     $value = [uint32]0
     if ($request.Length -ne 8 -or
@@ -206,7 +206,7 @@ function Get-ResponseCode([string]$request) {
         return '--------'
     }
     $product = [uint64]$value * [uint64]268435579
-    return '{0:X8}' -f [uint32]($product % [uint64]4294967296)
+    return '{0:X8}' -f [uint32]($product % [uint64]4294967291)
 }
 
 $txtRequest.Add_TextChanged({ $txtResponse.Text = Get-ResponseCode $txtRequest.Text.Trim() })
