@@ -53,6 +53,7 @@ $btnReport.Text     = 'Save Report'
 $btnReport.Location = New-Object System.Drawing.Point(480, 388)
 $btnReport.Size     = New-Object System.Drawing.Size(120, 28)
 $tabSummary.Controls.Add($btnReport)
+Set-EnterButton $initialsBox $btnReport
 
 function Update-Summary {
     Enter-Busy 'Checking this computer...'

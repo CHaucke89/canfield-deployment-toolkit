@@ -31,6 +31,7 @@ $nameHint.Location = New-Object System.Drawing.Point(12, 76)
 $nameHint.AutoSize = $true
 $grpName.Controls.Add($nameHint)
 
+Set-EnterButton $nameBox $btnName
 $nameBox.Add_TextChanged({
     $btnName.Enabled = ($nameBox.Text.Trim().Length -gt 0 -and $nameBox.Text.Trim() -ne $env:COMPUTERNAME)
 })
@@ -91,6 +92,7 @@ $photoNote.Location = New-Object System.Drawing.Point(12, 72)
 $photoNote.AutoSize = $true
 $grpPhoto.Controls.Add($photoNote)
 
+Set-EnterButton $photoBox $btnPhoto
 $photoBox.Add_TextChanged({ $btnPhoto.Enabled = ($photoBox.Text.Trim().Length -gt 0) })
 
 $btnPhoto.Add_Click({

@@ -32,6 +32,17 @@ function New-Group($Page, [string]$Text, [int]$Y, [int]$Height) {
     return $g
 }
 
+# Pressing Enter in a text box clicks its action button (if enabled), without the error beep.
+function Set-EnterButton($TextBox, $Button) {
+    $TextBox.Tag = $Button
+    $TextBox.Add_KeyDown({
+        param($sender, $e)
+        if ($e.KeyCode -ne 'Enter') { return }
+        $e.SuppressKeyPress = $true
+        if ($this.Tag.Enabled) { $this.Tag.PerformClick() }
+    })
+}
+
 # Green for good, red otherwise.
 function Set-StatusLabel($Label, [string]$Text, [bool]$Good) {
     $Label.Text      = $Text
