@@ -55,9 +55,10 @@ Sets up remote support.
 
 ## Canfield Capture Tab
 
-Installs and activates Canfield Capture.
+Installs Canfield Capture and provides a PowerShell implementation of the Response Code Generator
+for registering users.
 
-![Canfield Capture tab after a scan, with activation codes filled in](images/03-canfield-capture.png)
+![Canfield Capture tab after a scan, with response code filled in](images/03-canfield-capture.png)
 
 1. Insert the USB drive. The toolkit scans it the first time you open the
    tab. Click **Scan USB** to scan again. If the installer is somewhere
@@ -68,10 +69,12 @@ Installs and activates Canfield Capture.
 3. Click **Install Selected**. The installer runs silently and the toolkit
    reports when it is done or if a restart is needed.
 
-**Activation codes.** When Canfield Capture asks for activation, its request
-code appears in the **Request code** box automatically and the
-**Response code** appears next to it. Type the response code into Capture.
-If the request code does not fill in, type it into the box by hand.
+**Request / Response Codes.** The toolkit calculates the response code from
+the request code exactly as ResponseCodeGenerator.exe does, so RCG is
+no longer required. Make sure the toolkit is open when registering users and
+the request/response codes will populate automatically just like RCG.
+There is a status indicator next to the **Response code:** field that indicates
+whether auto-fill is functioning properly.
 
 ## Users Tab
 
