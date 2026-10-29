@@ -9,10 +9,17 @@ $btnScan.Location = New-Object System.Drawing.Point(15, 12)
 $btnScan.Size     = New-Object System.Drawing.Size(90, 26)
 $tabUsb.Controls.Add($btnScan)
 
+$btnBrowse = New-Object System.Windows.Forms.Button
+$btnBrowse.Text     = 'Browse...'
+$btnBrowse.Location = New-Object System.Drawing.Point(110, 12)
+$btnBrowse.Size     = New-Object System.Drawing.Size(90, 26)
+$tabUsb.Controls.Add($btnBrowse)
+
 $usbInfo = New-Object System.Windows.Forms.Label
-$usbInfo.Text     = 'Click Scan USB to look for setup.exe.'
-$usbInfo.Location = New-Object System.Drawing.Point(115, 18)
-$usbInfo.Size     = New-Object System.Drawing.Size(480, 18)
+$usbInfo.Text     = 'Click Scan USB to look for setup.exe, or Browse... to pick it.'
+$usbInfo.Location = New-Object System.Drawing.Point(210, 18)
+$usbInfo.Size     = New-Object System.Drawing.Size(385, 18)
+$usbInfo.AutoEllipsis = $true
 $tabUsb.Controls.Add($usbInfo)
 
 $list = New-Object System.Windows.Forms.ListBox
@@ -114,7 +121,7 @@ function Invoke-UsbScan {
     $roots = Get-UsbDriveRoots
     if ($roots.Count -eq 0) {
         Exit-Busy
-        $usbInfo.Text = 'No USB drive detected. Insert one and click Scan USB.'
+        $usbInfo.Text = 'No USB drive detected. Insert one and click Scan USB, or click Browse...'
         return
     }
 
@@ -143,17 +150,39 @@ function Invoke-UsbScan {
     Exit-Busy
 
     if ($cancelled) { $usbInfo.Text = 'Scan cancelled.'; return }
-    if ($found.Count -eq 0) { $usbInfo.Text = 'No installer found on the USB drive.'; return }
+    if ($found.Count -eq 0) { $usbInfo.Text = 'No installer found on the USB drive. Click Browse... to pick one.'; return }
 
-    foreach ($f in ($found | Sort-Object)) {
-        $name = Split-Path -Leaf $f
-        if (-not $name) { $name = $f }   # setup.exe in the drive root
-        $display = '{0}    ({1})' -f $name, $f
-        [void]$list.Items.Add([pscustomobject]@{ Display = $display; Folder = $f; Version = (Get-InstallerVersion $f); Installed = $false })
-    }
+    foreach ($f in ($found | Sort-Object)) { [void](Add-InstallerItem $f) }
     Update-InstalledMarks
     $usbInfo.Text = 'Found installer(s) in {0} folder(s). Select one:' -f $found.Count
 }
+
+# Adds an installer folder (one containing setup.exe) to the list unless it is already there; returns its item.
+function Add-InstallerItem([string]$Folder) {
+    foreach ($item in $list.Items) { if ($item.Folder -eq $Folder) { return $item } }
+    $name = Split-Path -Leaf $Folder
+    if (-not $name) { $name = $Folder }   # setup.exe in the drive root
+    $display = '{0}    ({1})' -f $name, $Folder
+    $item = [pscustomobject]@{ Display = $display; Folder = $Folder; Version = (Get-InstallerVersion $Folder); Installed = $false }
+    [void]$list.Items.Add($item)
+    return $item
+}
+
+# Manual fallback: pick a setup.exe anywhere (network share, local folder, unlisted drive) and add it to the list.
+$btnBrowse.Add_Click({
+    $dlg = New-Object System.Windows.Forms.OpenFileDialog
+    $dlg.Title  = 'Select the Canfield Capture installer (setup.exe)'
+    $dlg.Filter = 'Canfield Capture installer (setup.exe)|setup.exe|Programs (*.exe)|*.exe'
+    if ($dlg.ShowDialog($form) -ne [System.Windows.Forms.DialogResult]::OK) { return }
+    if ((Split-Path -Leaf $dlg.FileName) -ne 'setup.exe') {
+        Show-Message "Please select the installer's setup.exe." 'Warning'
+        return
+    }
+    $item = Add-InstallerItem (Split-Path -Parent $dlg.FileName)
+    Update-InstalledMarks
+    $list.SelectedItem = $item
+    $usbInfo.Text = 'Added {0}. Click Install Selected to install it.' -f $item.Folder
+})
 
 $btnScan.Add_Click({ Invoke-UsbScan })
 $list.Add_SelectedIndexChanged({ $btnUsb.Enabled = ($null -ne $list.SelectedItem) })
@@ -167,7 +196,7 @@ $btnUsb.Add_Click({
     $setup  = Join-Path $choice.Folder 'setup.exe'
 
     if (-not (Test-Path -LiteralPath $setup)) {
-        Show-Message "Installer is no longer available:`n$setup`nWas the USB drive removed?" 'Error'
+        Show-Message "Installer is no longer available:`n$setup`nWas the USB drive or network share removed?" 'Error'
         return
     }
     $installed = @(Get-CaptureInstalls)
@@ -189,7 +218,7 @@ $btnUsb.Add_Click({
         switch ($code) {
             0       { Show-Message "Installation completed successfully." 'Information' }
             { $_ -in 1641, 3010 } { Show-Message "Installation completed. A reboot is required to finish." 'Information' }
-            default { Show-Message "The installer exited with code $code.`nIf nothing was installed, run setup.exe from the USB drive manually." 'Warning' }
+            default { Show-Message "The installer exited with code $code.`nIf nothing was installed, run setup.exe from $($choice.Folder) manually." 'Warning' }
         }
     } catch {
         Exit-Busy
