@@ -89,6 +89,18 @@ function Get-CaptureInstalls {
         })
 }
 
+# Canfield Capture entries in Programs and Features. Name is 'Canfield Capture v6.1.0'; Source is the folder
+# the installer ran from (e.g. 'D:\AbbVie M26-312 (v6.1.0) Part 1\'), which tells apart study builds of the
+# same version. Source is empty when the installer did not record one.
+function Get-CaptureUninstallEntries {
+    $keys = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    return @(Get-ItemProperty -Path $keys -ErrorAction SilentlyContinue |
+        Where-Object { $_.DisplayName -like 'Canfield Capture v*' } | ForEach-Object {
+            [pscustomobject]@{ Name = $_.DisplayName; Source = [string]$_.InstallSource }
+        })
+}
+
 # Version ('v3.6.0') of a Canfield Capture installer folder: from the folder name, else its path,
 # else setup.exe's product version. $null when none is found.
 function Get-InstallerVersion([string]$Folder) {

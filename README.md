@@ -166,7 +166,7 @@ git push origin v1.0.0
 - **Browse...** picks a `setup.exe` from anywhere (another folder, network share or drive) when none is on the USB drive, and adds its folder to the list. A new USB scan clears browsed entries.
 - Lets you choose the installer folder; it runs silently with `/S /v/qn`.
 - **Open Response Code Generator** opens `ResponseCodeGenerator.exe` found on the USB drive during the scan (greyed out when none was found).
-- Installers whose version is already installed show in green (a legend under the list explains the colors). The version comes from the installer's folder name or path (for example `v3.6.0`), else from `setup.exe`'s product version, and is matched against `C:\Program Files (x86)\Canfield Scientific Inc\Canfield Capture v*`.
+- Installers that are already installed show in green (a legend under the list explains the colors). An installer is matched by its folder name against the folder each installed Canfield Capture was installed from (the `InstallSource` recorded in Programs and Features), so study builds of the same version are told apart. For an installed version with no recorded source, it falls back to matching the version: from the installer's folder name or path (for example `v3.6.0`), else from `setup.exe`'s product version, against `C:\Program Files (x86)\Canfield Scientific Inc\Canfield Capture v*`.
 - Asks first if a version of Canfield Capture is already installed.
 - Runs installer and reports result or reboot-required codes.
 
