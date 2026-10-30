@@ -86,12 +86,20 @@ $tabUsb.Controls.Add($btnUsb)
 
 $script:usbScanned = $false
 
-# Marks list entries whose version is already installed (shown in green) and sizes the horizontal scrollbar.
+# Marks list entries that are already installed (shown in green) and sizes the horizontal scrollbar.
+# Study builds can share a version (such as several 'v6.1.0' installers), so an entry is matched by the folder name the
+# install was run from (the registry's InstallSource). Only versions installed without a recorded source
+# fall back to matching by version.
 function Update-InstalledMarks {
-    $installed = @(Get-CaptureInstalls | ForEach-Object { $_.Name -replace '^Canfield Capture ', '' })
+    $entries = @(Get-CaptureUninstallEntries)
+    $sources = @($entries | Where-Object { $_.Source } | ForEach-Object { Split-Path -Leaf $_.Source.TrimEnd('\') })
+    $withSource = @($entries | Where-Object { $_.Source } | ForEach-Object { $_.Name })
+    $versionOnly = @(Get-CaptureInstalls | Where-Object { $withSource -notcontains $_.Name } |
+        ForEach-Object { $_.Name -replace '^Canfield Capture ', '' })
     $widest = 0
     foreach ($item in $list.Items) {
-        $item.Installed = [bool]($item.Version -and ($installed -contains $item.Version))
+        $leaf = Split-Path -Leaf $item.Folder.TrimEnd('\')
+        $item.Installed = [bool](($sources -contains $leaf) -or ($item.Version -and ($versionOnly -contains $item.Version)))
         $widest = [math]::Max($widest, [System.Windows.Forms.TextRenderer]::MeasureText($item.Display, $list.Font).Width)
     }
     $list.HorizontalExtent = $widest + 6
