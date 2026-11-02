@@ -9,7 +9,7 @@ Windows deployment toolkit for common machine-setup tasks in one GUI:
 - Clean Canfield Capture site databases, set Site IDs, and force SSCT users to change passwords.
 - Check the machine's status and save a QC report.
 
-The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe`).
+The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe`). For how to use each tab, see the [User Guide](USER-GUIDE.md).
 
 ## Project Files
 
@@ -18,6 +18,7 @@ The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe
 - `src\lib\`: UI-free helpers (validation, sponsor CSV, USB discovery, Canfield Capture cleanup, local users, status checks).
 - `src\ui\`: Main window and shared progress/message helpers.
 - `src\tabs\`: One file per tab (Computer, Remote Access, Canfield Capture, Users, Cleanup Tool, Summary, Scripts).
+- `USER-GUIDE.md`: User guide for each tab, with screenshots in `images\`.
 - `Build-Toolkit-Exe.ps1`: Inlines `src\` into the entry script and builds a single `CDT.exe` using PS2EXE.
 - `assets\toolkit.ico`: Icon embedded into the EXE (file icon, window and taskbar). Required by the build.
 - `build_bypass.cmd`: Convenience wrapper to run the build script with execution policy bypass (run it from the repo folder).
@@ -165,7 +166,7 @@ git push origin v1.0.0
 - Scans attached USB drives for folders containing `setup.exe`. The scan runs automatically the first time the tab is opened, can be cancelled, and can be repeated with **Scan USB**.
 - **Browse...** picks a `setup.exe` from anywhere (another folder, network share or drive) when none is on the USB drive, and adds its folder to the list. A new USB scan clears browsed entries.
 - Lets you choose the installer folder; it runs silently with `/S /v/qn`.
-- **Open Response Code Generator** opens `ResponseCodeGenerator.exe` found on the USB drive during the scan (greyed out when none was found).
+- Response code generator (replaces `ResponseCodeGenerator.exe`): type the 8-character request code into **Request code** and the **Response code** box fills in. While the toolkit is open, it also answers Canfield Capture's requests on the `CanfieldPipe` named pipe and fills in the request code automatically; the label beside the boxes shows whether auto-fill is ready.
 - Installers that are already installed show in green (a legend under the list explains the colors). An installer is matched by its folder name against the folder each installed Canfield Capture was installed from (the `InstallSource` recorded in Programs and Features), so study builds of the same version are told apart. For an installed version with no recorded source, it falls back to matching the version: from the installer's folder name or path (for example `v3.6.0`), else from `setup.exe`'s product version, against `C:\Program Files (x86)\Canfield Scientific Inc\Canfield Capture v*`.
 - Asks first if a version of Canfield Capture is already installed.
 - Runs installer and reports result or reboot-required codes.
