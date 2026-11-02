@@ -13,13 +13,8 @@ Have these ready:
 - The `Scripts` folder next to `CDT.exe`, for the Canfield scripts and Resolve MDM.
 - A network connection (LogMeIn is downloaded during install).
 
-Double-click `CDT.exe` and click **Yes** when Windows asks for administrator
+Double-click `CDT.exe` and click **Yes** if Windows asks for administrator
 rights.
-
-### Suggested Order
-
-Work through the tabs from left to right, and finish on **Summary** to save
-the QC report. The **Scripts** tab can be done at any point.
 
 ## Computer Tab
 
@@ -78,7 +73,8 @@ whether auto-fill is functioning properly.
 
 ## Users Tab
 
-Manages the Windows accounts that site staff sign in with.
+Manages the Windows accounts that site staff sign in with. This tab won't be
+used much as we move to SSO.
 
 ![Users tab](images/04-users.png)
 
@@ -96,8 +92,7 @@ Manages the Windows accounts that site staff sign in with.
 
 ## Cleanup Tool Tab
 
-Removes leftover site data from Canfield Capture so the computer is ready for
-a new site.
+Removes leftover Canfield Capture data to prep for shipment.
 
 ![Cleanup Tool tab](images/05-cleanup.png)
 
@@ -109,7 +104,7 @@ a new site.
 - **Set Site IDs** opens every installed version in turn, so you can set the
   Site ID without cleaning.
 
-Registered users are always kept. Cleanup never deletes them.
+Registered users are always kept.
 
 ## Summary Tab
 
