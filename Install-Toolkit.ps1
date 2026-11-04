@@ -76,3 +76,4 @@ foreach ($rel in (& (Join-Path $srcDir 'LoadOrder.ps1'))) { . (Join-Path $srcDir
 # __SOURCES_END__
 
 [void]$form.ShowDialog()
+Write-Log '==== Toolkit closed'

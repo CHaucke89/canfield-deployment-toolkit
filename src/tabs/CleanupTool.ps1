@@ -83,10 +83,12 @@ $btnClean.Add_Click({
 
     try {
         foreach ($v in $selected) {
+            Write-Log "Cleaning database for $($v.Name)"
             Enter-Busy "Cleaning $($v.Display)..."
             Clear-CaptureDatabase $v.Name
             Rename-CaptureLogFiles $v.Name
             Exit-Busy
+            Write-Log "Cleaned database for $($v.Name)"
 
             $exe = Join-Path $script:CaptureProgramRoot "$($v.Name)\Canfield Capture.exe"
             if (-not (Test-Path -LiteralPath $exe)) {
@@ -129,6 +131,7 @@ $btnSiteIds.Add_Click({
     $copied = @()
     try {
         $copied = @(Copy-RegisteredUsers @($installs | ForEach-Object { $_.Name }))
+        if ($copied.Count -gt 0) { Write-Log ('Copied Registered_Users.sdf to: ' + ($copied -join ', ')) }
     } catch {
         Show-Message "Could not copy registered users:`n$($_.Exception.Message)" 'Warning'
     }

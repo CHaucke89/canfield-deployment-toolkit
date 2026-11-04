@@ -119,6 +119,10 @@ A final check of the whole setup, and the QC report.
 3. Click **Save Report**. It saves a picture of the window (JPG) and a text
    file with the same details.
 
+**Open Log Folder** opens the folder holding `CDT.log`, the toolkit's log of
+everything it did on this computer. Send it along with the QC report if
+something went wrong. Passwords are never written to the log.
+
 ## Scripts Tab
 
 Turns the Canfield scheduled scripts on or off.

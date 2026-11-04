@@ -47,6 +47,7 @@ $btnName.Add_Click({
         $appTitle, 'YesNo', 'Question')
     if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
+    Write-Log "Renaming computer '$env:COMPUTERNAME' to '$newName'"
     try {
         Rename-Computer -NewName $newName -Force -ErrorAction Stop
     } catch {
@@ -60,6 +61,7 @@ $btnName.Add_Click({
         "Computer renamed to '$newName'.`nRestart now to finish?",
         $appTitle, 'YesNo', 'Question')
     if ($restart -eq [System.Windows.Forms.DialogResult]::Yes) {
+        Write-Log 'Restarting the computer'
         try { Restart-Computer -Force -ErrorAction Stop }
         catch { Show-Message "Could not restart the computer:`n$($_.Exception.Message)" 'Error' }
     }
@@ -106,7 +108,7 @@ $btnPhoto.Add_Click({
         $secure = ConvertTo-SecureString $pass -AsPlainText -Force
         Set-LocalUser -Name 'Site Photographer' -Password $secure -PasswordNeverExpires $true `
             -UserMayChangePassword $false -ErrorAction Stop
-        Show-Message "Site Photographer password updated to '$pass'." 'Information'
+        Show-Message "Site Photographer password updated to '$pass'." 'Information' $pass
     } catch {
         Show-Message "Site Photographer password NOT updated:`n$($_.Exception.Message)" 'Error'
     }
@@ -159,6 +161,7 @@ $tzCombo.Add_SelectedIndexChanged({
     if ($script:tzLoading -or $null -eq $tzCombo.SelectedItem) { return }
     try {
         Set-TimeZone -Id $tzCombo.SelectedItem.Id -ErrorAction Stop
+        Write-Log "Time zone set to $($tzCombo.SelectedItem.Id)"
     } catch {
         Show-Message "Time zone NOT changed:`n$($_.Exception.Message)" 'Error'
     }

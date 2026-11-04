@@ -126,7 +126,7 @@ $btnCreateUser.Add_Click({
     $fullName = (@($userPrefix.Text.Trim(), $first, $last) | Where-Object { $_ }) -join ' '
     try {
         New-SiteUser $username $fullName $pass
-        Show-Message "User '$username' ($fullName) created.`nTemporary password: $pass" 'Information'
+        Show-Message "User '$username' ($fullName) created.`nTemporary password: $pass" 'Information' $pass
         $userPrefix.Clear(); $userFirst.Clear(); $userLast.Clear()
         $userPass.Text = $script:DefaultUserPassword
         [void]$userFirst.Focus()
@@ -143,7 +143,7 @@ $btnResetPass.Add_Click({
     if (-not $pass) { return }
     try {
         Reset-SiteUserPassword $u.Name $pass
-        Show-Message "Password for '$($u.Name)' reset to '$pass'.`nThey must change it at next sign-in." 'Information'
+        Show-Message "Password for '$($u.Name)' reset to '$pass'.`nThey must change it at next sign-in." 'Information' $pass
     } catch {
         Show-Message "Password NOT reset:`n$($_.Exception.Message)" 'Error'
     }
@@ -156,6 +156,7 @@ $btnRenameUser.Add_Click({
     if (-not $name -or $name -eq $u.FullName) { return }
     try {
         Set-LocalUser -Name $u.Name -FullName $name -ErrorAction Stop
+        Write-Log "Full name of '$($u.Name)' changed from '$($u.FullName)' to '$name'"
     } catch {
         Show-Message "Name NOT changed:`n$($_.Exception.Message)" 'Error'
     }
@@ -170,6 +171,7 @@ $btnDeleteUser.Add_Click({
         "Delete the Windows account '$($u.Display.Trim())'?`n`nThis cannot be undone.",
         $appTitle, 'YesNo', 'Warning', 'Button2')
     if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+    Write-Log "Deleting Windows account '$($u.Name)'"
     try {
         Remove-SiteUser $u.Name
         Show-Message "'$($u.Name)' deleted." 'Information'

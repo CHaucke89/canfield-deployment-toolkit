@@ -307,6 +307,7 @@ $rcgTimer.Add_Tick({
     if ($script:rcgShared.Seq -ne $script:rcgSeenSeq) {
         $script:rcgSeenSeq = $script:rcgShared.Seq
         $txtRequest.Text = $script:rcgShared.Request
+        Write-Log "Response code sent to Canfield Capture for request code $($script:rcgShared.Request)"
     }
 })
 $rcgTimer.Start()

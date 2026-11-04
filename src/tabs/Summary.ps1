@@ -48,6 +48,12 @@ $btnSummaryRefresh.Location = New-Object System.Drawing.Point(10, 388)
 $btnSummaryRefresh.Size     = New-Object System.Drawing.Size(90, 28)
 $tabSummary.Controls.Add($btnSummaryRefresh)
 
+$btnLogFolder = New-Object System.Windows.Forms.Button
+$btnLogFolder.Text     = 'Open Log Folder'
+$btnLogFolder.Location = New-Object System.Drawing.Point(110, 388)
+$btnLogFolder.Size     = New-Object System.Drawing.Size(120, 28)
+$tabSummary.Controls.Add($btnLogFolder)
+
 $btnReport = New-Object System.Windows.Forms.Button
 $btnReport.Text     = 'Save Report'
 $btnReport.Location = New-Object System.Drawing.Point(480, 388)
@@ -108,6 +114,15 @@ function Get-SummaryText {
 }
 
 $btnSummaryRefresh.Add_Click({ Update-Summary })
+# Opens the toolkit's log folder (CDT.log, plus CDT.1.log once the log has rolled over) in Explorer.
+$btnLogFolder.Add_Click({
+    try {
+        if (-not (Test-Path -LiteralPath $script:LogDir)) { New-Item -ItemType Directory -Path $script:LogDir -Force | Out-Null }
+        Start-Process -FilePath explorer.exe -ArgumentList ('"{0}"' -f $script:LogDir)
+    } catch {
+        Show-Message "Could not open the log folder:`n$script:LogDir`n$($_.Exception.Message)" 'Error'
+    }
+})
 $tabs.Add_SelectedIndexChanged({
     if ($tabs.SelectedTab -eq $tabSummary) { Update-Summary }
 })

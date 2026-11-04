@@ -195,6 +195,11 @@ Ported from the Cleanup Tool in the Canfield Setup Tool (`CST.ps1`, not included
 - Shows computer name, service tag, model, date and time, time zone, Wi-Fi, BitLocker, LogMeIn, Resolve MDM, installed Canfield Capture versions and the number of site users. Refreshes each time the tab is opened.
 - Lists installed protocols with their version, SSO use, and the Site ID last logged by Canfield Capture (`C:\ProgramData\Canfield\DiagLib`). A cleaned version shows "Not set" until its Site ID is set again.
 - **Save Report** (technician initials required) saves a JPG picture of the window plus a `.txt` with the same name, containing every check, the protocols, initials and comments.
+- **Open Log Folder** opens the toolkit's log folder (see [Log File](#log-file)).
+
+### Log File
+
+Every run appends to one rolling log per computer: `C:\ProgramData\CanfieldDeploymentToolkit\Logs\CDT.log`. Each line is timestamped and shows a level (`INFO`, `WARN`, `ERROR`). The log records when the toolkit starts (version, computer name, Windows user) and closes, every message the toolkit shows, every external program it runs (command line, exit code and duration), and changes that show no message (time zone, user full name, scripts turned on or off, auto-filled response codes). Passwords are written as `****`. When the log passes 5 MB it is renamed to `CDT.1.log` (replacing the previous one) and a new `CDT.log` starts. The folder is outside `C:\ProgramData\Canfield`, so the Cleanup Tool never deletes it.
 
 ### Scripts Tab
 

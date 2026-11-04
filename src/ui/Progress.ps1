@@ -47,7 +47,9 @@ function Exit-Busy {
     [void]$form.Activate()
 }
 
-function Show-Message([string]$text, [string]$icon) {
+# Every message shown is also written to the log; pass any password it contains as $Secret to mask it there.
+function Show-Message([string]$text, [string]$icon, [string[]]$Secret) {
+    Write-Log $text (Get-LogLevel $icon) $Secret
     [void][System.Windows.Forms.MessageBox]::Show($form, $text, $appTitle, 'OK', $icon)
 }
 
@@ -56,13 +58,16 @@ function Invoke-WithProgress([string]$file, [string]$arguments, [string]$workDir
     $p = @{ FilePath = $file; PassThru = $true; WindowStyle = $windowStyle }
     if ($arguments) { $p.ArgumentList = $arguments }
     if ($workDir)   { $p.WorkingDirectory = $workDir }
-    $proc = Start-Process @p
+    Write-Log "Running: $file $arguments"
+    try { $proc = Start-Process @p }
+    catch { Write-Log "Could not start ${file}: $($_.Exception.Message)" 'ERROR'; throw }
     $null = $proc.Handle   # cache handle so ExitCode is readable after exit
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     while (-not $proc.HasExited) {
         Set-Status ("{0}`nElapsed: {1:mm\:ss}" -f $label, $sw.Elapsed)
         Start-Sleep -Milliseconds 250
     }
+    Write-Log ("Finished: {0} (exit code {1}, {2:mm\:ss})" -f (Split-Path -Leaf $file), $proc.ExitCode, $sw.Elapsed)
     return $proc.ExitCode
 }
 
