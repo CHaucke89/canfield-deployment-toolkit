@@ -2,6 +2,7 @@
 # Build-Toolkit-Exe.ps1 reads this same list to inline the files into the single-file exe.
 # Tab order in the window follows the order of the tabs\ entries.
 @(
+    'lib\Log.ps1'
     'lib\Validation.ps1'
     'lib\Sponsors.ps1'
     'lib\Usb.ps1'

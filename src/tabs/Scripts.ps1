@@ -54,12 +54,12 @@ foreach ($row in $scriptRows) {
         Update-ScriptsTab
     })
     $row.On.Add_Click({
-        try { Set-CanfieldTaskEnabled $this.Tag.Task $true }
+        try { Set-CanfieldTaskEnabled $this.Tag.Task $true; Write-Log "Turned on $($this.Tag.Name)" }
         catch { Show-Message "Could not turn on $($this.Tag.Name):`n$($_.Exception.Message)" 'Error' }
         Update-ScriptsTab
     })
     $row.Off.Add_Click({
-        try { Set-CanfieldTaskEnabled $this.Tag.Task $false }
+        try { Set-CanfieldTaskEnabled $this.Tag.Task $false; Write-Log "Turned off $($this.Tag.Name)" }
         catch { Show-Message "Could not turn off $($this.Tag.Name):`n$($_.Exception.Message)" 'Error' }
         Update-ScriptsTab
     })
