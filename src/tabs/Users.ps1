@@ -112,21 +112,21 @@ $tabs.Add_SelectedIndexChanged({
 
 $btnCreateUser.Add_Click({
     $first = $userFirst.Text.Trim(); $last = $userLast.Text.Trim()
-    $username = $userName.Text.Trim(); $pass = $userPass.Text
-    if (-not $first -or -not $last -or -not $username -or -not $pass) {
+    $newUser = $userName.Text.Trim(); $pass = $userPass.Text
+    if (-not $first -or -not $last -or -not $newUser -or -not $pass) {
         Show-Message 'Enter a first name, last name, username and password.' 'Warning'
         return
     }
     if ($ssoNote.Visible) {
         $go = [System.Windows.Forms.MessageBox]::Show($form,
-            "Only SSO protocols are installed, so a local user is usually not needed.`nCreate '$username' anyway?",
+            "Only SSO protocols are installed, so a local user is usually not needed.`nCreate '$newUser' anyway?",
             $appTitle, 'YesNo', 'Question')
         if ($go -ne [System.Windows.Forms.DialogResult]::Yes) { return }
     }
     $fullName = (@($userPrefix.Text.Trim(), $first, $last) | Where-Object { $_ }) -join ' '
     try {
-        New-SiteUser $username $fullName $pass
-        Show-Message "User '$username' ($fullName) created.`nTemporary password: $pass" 'Information' $pass
+        New-SiteUser $newUser $fullName $pass
+        Show-Message "User '$newUser' ($fullName) created.`nTemporary password: $pass" 'Information' $pass
         $userPrefix.Clear(); $userFirst.Clear(); $userLast.Clear()
         [void]$userFirst.Focus()
     } catch {
