@@ -128,6 +128,7 @@ $btnCreateUser.Add_Click({
         New-SiteUser $newUser $fullName $pass
         Show-Message "User '$newUser' ($fullName) created.`nTemporary password: $pass" 'Information' $pass
         $userPrefix.Clear(); $userFirst.Clear(); $userLast.Clear()
+        $userPass.Text = $script:DefaultUserPassword
         [void]$userFirst.Focus()
     } catch {
         Show-Message "User NOT created:`n$($_.Exception.Message)" 'Error'
