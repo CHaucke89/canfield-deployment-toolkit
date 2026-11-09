@@ -42,10 +42,6 @@ $btnName.Add_Click({
         Show-Message "'$newName' is not a valid computer name.`nUse 1-15 letters, digits or hyphens; no leading/trailing hyphen, and not only digits." 'Warning'
         return
     }
-    $confirm = [System.Windows.Forms.MessageBox]::Show($form,
-        "Rename this computer from '$env:COMPUTERNAME' to '$newName'?`nA restart is required for the change to take effect.",
-        $appTitle, 'YesNo', 'Question')
-    if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
     Write-Log "Renaming computer '$env:COMPUTERNAME' to '$newName'"
     try {
