@@ -127,7 +127,7 @@ $tabs.Add_SelectedIndexChanged({
     if ($tabs.SelectedTab -eq $tabSummary) { Update-Summary }
 })
 
-# Saves a JPG picture of the window and a .txt with the same name.
+# Saves a JPG picture of the window, plus a .txt and a copy of the toolkit log with the same name.
 $btnReport.Add_Click({
     if (-not $initialsBox.Text.Trim()) {
         Show-Message 'Enter your initials before saving the report.' 'Warning'
@@ -148,7 +148,13 @@ $btnReport.Add_Click({
         $bmp.Dispose()
         $txt = [System.IO.Path]::ChangeExtension($dlg.FileName, '.txt')
         Set-Content -LiteralPath $txt -Value (Get-SummaryText) -Encoding UTF8
-        Show-Message "Report saved:`n$($dlg.FileName)`n$txt" 'Information'
+        $saved = "$($dlg.FileName)`n$txt"
+        if (Test-Path -LiteralPath $script:LogFile) {
+            $log = [System.IO.Path]::ChangeExtension($dlg.FileName, '.log')
+            Copy-Item -LiteralPath $script:LogFile -Destination $log -Force
+            $saved += "`n$log"
+        }
+        Show-Message "Report saved:`n$saved" 'Information'
     } catch {
         Show-Message "Report NOT saved:`n$($_.Exception.Message)" 'Error'
     }
