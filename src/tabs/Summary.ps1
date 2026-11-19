@@ -15,8 +15,8 @@ function New-ListView([int]$Y, [int]$Height, [object[]]$Columns) {
     return $lv
 }
 
-$statusView   = New-ListView 8 190 @(@('Check', 150), @('Result', 415))
-$protocolView = New-ListView 204 100 @(@('Protocol', 220), @('Version', 120), @('Site ID', 150), @('SSO', 75))
+$statusView   = New-ListView 8 220 @(@('Check', 150), @('Result', 415))
+$protocolView = New-ListView 234 70 @(@('Protocol', 220), @('Version', 120), @('Site ID', 150), @('SSO', 75))
 
 $initialsLabel = New-Object System.Windows.Forms.Label
 $initialsLabel.Text     = 'Technician initials:'
