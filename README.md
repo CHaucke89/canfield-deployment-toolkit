@@ -15,12 +15,13 @@ The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe
 
 - `Install-Toolkit.ps1`: Entry point (startup, elevation, loads `src\`).
 - `src\LoadOrder.ps1`: Ordered list of source files to load (also used by the build).
-- `src\lib\`: UI-free helpers (validation, sponsor CSV, USB discovery, Canfield Capture cleanup, local users, status checks).
+- `src\lib\`: UI-free helpers (validation, sponsor CSV, USB discovery, Canfield Capture cleanup, local users, status checks, logging).
 - `src\ui\`: Main window and shared progress/message helpers.
 - `src\tabs\`: One file per tab (Computer, Remote Access, Canfield Capture, Users, Cleanup Tool, Summary, Scripts).
 - `USER-GUIDE.md`: User guide for each tab, with screenshots in `images\`.
 - `Build-Toolkit-Exe.ps1`: Inlines `src\` into the entry script and builds a single `CDT.exe` using PS2EXE.
 - `assets\toolkit.ico`: Icon embedded into the EXE (file icon, window and taskbar). Required by the build.
+- `LICENSE`: MIT License.
 - `build_bypass.cmd`: Convenience wrapper to run the build script with execution policy bypass (run it from the repo folder).
 - `.github/workflows/build-exe.yml`: Builds EXE on every push and uploads it as an artifact.
 - `.github/workflows/release-exe.yml`: Builds EXE on version tag push and publishes it to a GitHub Release.
@@ -150,7 +151,7 @@ git push origin v1.0.0
 
 ### Computer Tab
 
-- Computer name: shows the current name, validates the new one (1-15 letters, digits or hyphens; no leading/trailing hyphen; not only digits), renames via `Rename-Computer` after confirmation, then offers to restart.
+- Computer name: shows the current name, validates the new one (1-15 letters, digits or hyphens; no leading/trailing hyphen; not only digits), renames via `Rename-Computer` as soon as you click, then offers to restart.
 - Site Photographer password: the entered password is normalized (symbols, spaces and numbers removed, letters lower-cased); the account is set to never expire and the user cannot change the password.
 - Date, time and time zone: picking a time zone from the dropdown sets it right away (`Set-TimeZone`). **Sync Time** starts the Windows Time service if needed and syncs the clock with the time server (`w32tm /resync /force`).
 - Windows Update: opens Windows Update in Settings.
@@ -194,7 +195,7 @@ Ported from the Cleanup Tool in the Canfield Setup Tool (`CST.ps1`, not included
 
 - Shows computer name, service tag, model, date and time, time zone, Wi-Fi, BitLocker, LogMeIn, Resolve MDM, installed Canfield Capture versions and the number of site users. Refreshes each time the tab is opened.
 - Lists installed protocols with their version, SSO use, and the Site ID last logged by Canfield Capture (`C:\ProgramData\Canfield\DiagLib`). A cleaned version shows "Not set" until its Site ID is set again.
-- **Save Report** (technician initials required) saves a JPG picture of the window plus a `.txt` with the same name, containing every check, the protocols, initials and comments.
+- **Save Report** (technician initials required) saves a JPG picture of the window plus a `.txt` with the same name, containing every check, the protocols, initials and comments, and a copy of the toolkit log (`.log`, see [Log File](#log-file)).
 - **Open Log Folder** opens the toolkit's log folder (see [Log File](#log-file)).
 
 ### Log File
@@ -220,3 +221,7 @@ Every run appends to one rolling log per computer: `C:\ProgramData\CanfieldDeplo
   - Check workflow logs and confirm `build/CDT.exe` was produced.
 - Canfield install returns non-zero exit code:
   - Run that installer's `setup.exe` from its folder manually.
+
+## License
+
+Released under the MIT License. See [LICENSE](LICENSE).
