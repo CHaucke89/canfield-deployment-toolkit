@@ -1,16 +1,19 @@
-name: Build DeployToolkit EXE
+name: Release DeployToolkit EXE
 
 on:
   push:
+    tags:
+      - "v*"
   workflow_dispatch:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
-  build-exe:
+  release:
     runs-on: windows-latest
+    environment: release
 
     steps:
       - name: Checkout repository
@@ -28,10 +31,14 @@ jobs:
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
-          ./Build-Toolkit-Exe.ps1
+          # Stamp the exe with the tag's version (v1.2.0 -> 1.2.0.0); manual runs off a branch keep the default.
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            ./Build-Toolkit-Exe.ps1 -Version $env:GITHUB_REF_NAME
+          } else {
+            ./Build-Toolkit-Exe.ps1
+          }
 
       - name: Log in to Azure
-        if: github.ref == 'refs/heads/master'
         uses: azure/login@v2
         with:
           allow-no-subscriptions: true
@@ -39,7 +46,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
 
       - name: Sign CDT.exe
-        if: github.ref == 'refs/heads/master'
         uses: azure/artifact-signing-action@v2
         with:
           endpoint: https://eus.codesigning.azure.net/
@@ -51,9 +57,10 @@ jobs:
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
 
-      - name: Upload CDT.exe artifact
-        uses: actions/upload-artifact@v4
+      - run: Copy-Item build/CDT.exe build/CDT-${{ github.ref_name }}.exe
+
+      - name: Create GitHub Release and upload EXE
+        uses: softprops/action-gh-release@v2
         with:
-          name: CDT-exe
-          path: build/CDT.exe
-          if-no-files-found: error
+          files: build/CDT-${{ github.ref_name }}.exe
+          generate_release_notes: true
