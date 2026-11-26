@@ -194,14 +194,20 @@ $btnSyncTime.Add_Click({
 # --- Windows Update ---
 $grpUpdate = New-Group $tabComputer 'Windows Update' 294 65
 
-$updateInfo = New-Object System.Windows.Forms.LinkLabel
+$updateInfo = New-Object System.Windows.Forms.Label
 $updateInfo.Text     = 'Click Check for Updates to see if this computer needs updates.'
-$updateInfo.LinkArea = New-Object System.Windows.Forms.LinkArea(0, 0)
 $updateInfo.Location = New-Object System.Drawing.Point(12, 28)
-$updateInfo.Size     = New-Object System.Drawing.Size(440, 18)
+$updateInfo.Size     = New-Object System.Drawing.Size(316, 18)
 $grpUpdate.Controls.Add($updateInfo)
 
 $updateTip = New-Object System.Windows.Forms.ToolTip
+
+$btnInstallUpdates = New-Object System.Windows.Forms.Button
+$btnInstallUpdates.Text     = 'Install'
+$btnInstallUpdates.Location = New-Object System.Drawing.Point(336, 22)
+$btnInstallUpdates.Size     = New-Object System.Drawing.Size(118, 28)
+$btnInstallUpdates.Enabled  = $false
+$grpUpdate.Controls.Add($btnInstallUpdates)
 
 $btnUpdate = New-Object System.Windows.Forms.Button
 $btnUpdate.Text     = 'Check for Updates'
@@ -209,48 +215,86 @@ $btnUpdate.Location = New-Object System.Drawing.Point(460, 22)
 $btnUpdate.Size     = New-Object System.Drawing.Size(118, 28)
 $grpUpdate.Controls.Add($btnUpdate)
 
-# Runs in a background runspace so the window stays responsive; the search can take minutes.
-$updateSearch = {
-    param($shared)
+# Runs in a background runspace so the window stays responsive; searching and installing can take a long time.
+# Install searches again because the COM update objects can't be handed between runspaces.
+$updateWorker = {
+    param($shared, $install)
     try {
         $session = New-Object -ComObject Microsoft.Update.Session
         $session.ClientApplicationID = 'Canfield Deployment Toolkit'
         $result = $session.CreateUpdateSearcher().Search('IsInstalled=0 and IsHidden=0')
         if ($result.ResultCode -ge 4) { throw "search failed (result code $($result.ResultCode))" }
         $shared.Titles = @(foreach ($u in $result.Updates) { $u.Title })
+        if (-not $install) { return }
+
+        # Updates that need someone to click through their own prompt can't be installed silently.
+        $todo = New-Object -ComObject Microsoft.Update.UpdateColl
+        foreach ($u in $result.Updates) {
+            if ($u.InstallationBehavior.CanRequestUserInput) { $shared.Skipped += $u.Title; continue }
+            if (-not $u.EulaAccepted) { $u.AcceptEula() }
+            [void]$todo.Add($u)
+        }
+        if ($todo.Count -eq 0) { throw 'none of the updates can be installed without user input' }
+
+        $shared.Step = 'Downloading'
+        $downloader = $session.CreateUpdateDownloader()
+        $downloader.Updates = $todo
+        [void]$downloader.Download()
+
+        $shared.Step = 'Installing'
+        $installer = $session.CreateUpdateInstaller()
+        $installer.Updates = $todo
+        $res = $installer.Install()
+        $shared.Results = @(for ($i = 0; $i -lt $todo.Count; $i++) {
+            [pscustomobject]@{ Title = $todo.Item($i).Title; Ok = ($res.GetUpdateResult($i).ResultCode -eq 2) }
+        })
+        $shared.RebootRequired = $res.RebootRequired
     } catch {
         $shared.Error = $_.Exception.Message
+    } finally {
+        $shared.Done = $true
     }
-    $shared.Done = $true
 }
 
-function Set-UpdateInfo([string]$Text, $Color, [bool]$Link) {
+function Set-UpdateInfo([string]$Text, $Color, [string]$Tip) {
     $updateInfo.Text      = $Text
     $updateInfo.ForeColor = $Color
-    $updateInfo.LinkArea  = if ($Link) { New-Object System.Windows.Forms.LinkArea($Text.IndexOf('Open Settings'), 13) }
-        else { New-Object System.Windows.Forms.LinkArea(0, 0) }
+    $updateTip.SetToolTip($updateInfo, $Tip)
 }
 
 $updateTimer = New-Object System.Windows.Forms.Timer
 $updateTimer.Interval = 500
 
-$btnUpdate.Add_Click({
+function Start-UpdateWorker([bool]$Install) {
     $btnUpdate.Enabled = $false
-    $updateTip.SetToolTip($updateInfo, '')
-    Set-UpdateInfo 'Checking for updates...' ([System.Drawing.SystemColors]::ControlText) $false
-    Write-Log 'Checking for Windows updates'
-    $script:updateShared = [hashtable]::Synchronized(@{ Done = $false; Titles = @(); Error = $null })
-    $script:updateWatch  = [System.Diagnostics.Stopwatch]::StartNew()
-    $script:updatePs     = [PowerShell]::Create()
-    [void]$script:updatePs.AddScript($updateSearch).AddArgument($script:updateShared)
+    $btnInstallUpdates.Enabled = $false
+    $script:updateShared = [hashtable]::Synchronized(@{
+        Install = $Install; Done = $false; Step = 'Checking'; Titles = @(); Results = @(); Skipped = @(); RebootRequired = $false; Error = $null })
+    $script:updateWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $script:updatePs    = [PowerShell]::Create()
+    [void]$script:updatePs.AddScript($updateWorker).AddArgument($script:updateShared).AddArgument($Install)
     [void]$script:updatePs.BeginInvoke()
     $updateTimer.Start()
+}
+
+$btnUpdate.Add_Click({
+    Set-UpdateInfo 'Checking for updates...' ([System.Drawing.SystemColors]::ControlText) ''
+    Write-Log 'Checking for Windows updates'
+    Start-UpdateWorker $false
+})
+
+$btnInstallUpdates.Add_Click({
+    Set-UpdateInfo 'Installing updates...' ([System.Drawing.SystemColors]::ControlText) ''
+    Write-Log 'Installing Windows updates'
+    Start-UpdateWorker $true
 })
 
 $updateTimer.Add_Tick({
     $shared = $script:updateShared
     if (-not $shared.Done) {
-        $updateInfo.Text = 'Checking for updates... {0:mm\:ss}' -f $script:updateWatch.Elapsed
+        $text = if ($shared.Install) { 'Installing updates...' } else { 'Checking for updates...' }
+        $updateInfo.Text = '{0} {1:mm\:ss}' -f $text, $script:updateWatch.Elapsed
+        $updateTip.SetToolTip($updateInfo, "$($shared.Step)...")
         return
     }
     $updateTimer.Stop()
@@ -258,27 +302,50 @@ $updateTimer.Add_Tick({
     $btnUpdate.Enabled = $true
 
     if ($shared.Error) {
-        Set-UpdateInfo 'Could not check for updates. Open Settings to try there.' ([System.Drawing.Color]::Firebrick) $true
-        $updateTip.SetToolTip($updateInfo, $shared.Error)
-        Write-Log "Windows Update check failed: $($shared.Error)" 'ERROR'
+        $what = if ($shared.Install) { 'install' } else { 'check for' }
+        Set-UpdateInfo "Could not $what updates." ([System.Drawing.Color]::Firebrick) $shared.Error
+        Write-Log "Windows Update ($($shared.Step.ToLower())) failed: $($shared.Error)" 'ERROR'
+        $btnInstallUpdates.Enabled = ($shared.Titles.Count -gt 0)
         return
     }
+
+    if ($shared.Install) {
+        $failed = @($shared.Results | Where-Object { -not $_.Ok })
+        foreach ($r in $shared.Results) { Write-Log ("  {0}: {1}" -f $(if ($r.Ok) { 'Installed' } else { 'FAILED' }), $r.Title) }
+        foreach ($t in $shared.Skipped) { Write-Log "  Skipped (needs user input): $t" 'WARN' }
+        $installed = $shared.Results.Count - $failed.Count
+        $text = "$installed of $($shared.Results.Count) updates installed."
+        if ($shared.RebootRequired) { $text += ' Restart required.' }
+        $color = if ($failed.Count) { [System.Drawing.Color]::Firebrick }
+            elseif ($shared.RebootRequired) { [System.Drawing.Color]::DarkGoldenrod }
+            else { [System.Drawing.Color]::ForestGreen }
+        $tip = @($failed | ForEach-Object { "Failed: $($_.Title)" }) + @($shared.Skipped | ForEach-Object { "Skipped: $_" })
+        Set-UpdateInfo $text $color ($tip -join "`n")
+        Write-Log "Windows Update: $text"
+        $btnInstallUpdates.Enabled = ($failed.Count -gt 0)
+        if ($shared.RebootRequired) {
+            $restart = [System.Windows.Forms.MessageBox]::Show($form,
+                "Updates installed. Restart now to finish?", $appTitle, 'YesNo', 'Question')
+            if ($restart -eq [System.Windows.Forms.DialogResult]::Yes) {
+                Write-Log 'Restarting the computer'
+                try { Restart-Computer -Force -ErrorAction Stop }
+                catch { Show-Message "Could not restart the computer:`n$($_.Exception.Message)" 'Error' }
+            }
+        }
+        return
+    }
+
     $count = $shared.Titles.Count
     if ($count -eq 0) {
-        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." ([System.Drawing.Color]::ForestGreen) $false
+        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." ([System.Drawing.Color]::ForestGreen) ''
         Write-Log 'Windows Update: up to date'
         return
     }
     $noun = if ($count -eq 1) { 'update' } else { 'updates' }
-    Set-UpdateInfo "$count $noun available. Open Settings to install." ([System.Drawing.Color]::DarkGoldenrod) $true
-    $updateTip.SetToolTip($updateInfo, ($shared.Titles -join "`n"))
+    Set-UpdateInfo "$count $noun available." ([System.Drawing.Color]::DarkGoldenrod) ($shared.Titles -join "`n")
     Write-Log "Windows Update: $count $noun available"
     foreach ($t in $shared.Titles) { Write-Log "  $t" }
-})
-
-$updateInfo.Add_LinkClicked({
-    try { Start-Process 'ms-settings:windowsupdate' }
-    catch { Show-Message "Could not open Windows Update:`n$($_.Exception.Message)" 'Error' }
+    $btnInstallUpdates.Enabled = $true
 })
 
 # --- BitLocker ---

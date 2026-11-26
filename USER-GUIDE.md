@@ -33,7 +33,9 @@ Basic computer settings.
 - **Windows Update**: click **Check for Updates**. The check runs in the
   background and can take a few minutes. It then shows **Up to date** in
   green, or how many updates are available in amber. Hover over the result
-  to see the update names, and click **Open Settings** to install them.
+  to see the update names. Click **Install** to install them; this can take
+  a while. When it finishes, it shows how many installed and asks to
+  restart if Windows needs it.
 - **BitLocker**: shows whether the system drive is encrypted. Green means
   encrypted, amber means encryption is in progress, and red means not
   encrypted or no recovery key.
