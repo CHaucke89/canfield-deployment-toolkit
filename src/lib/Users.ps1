@@ -59,3 +59,29 @@ function New-SharedAdmin([string]$Password) {
         -Password $secure -PasswordNeverExpires -UserMayNotChangePassword -ErrorAction Stop | Out-Null
     Add-LocalGroupMember -SID 'S-1-5-32-544' -Member 'SharedAdmin' -ErrorAction Stop   # Administrators, any language
 }
+
+# Windows can't reveal an account's password, so the toolkit keeps its own copy of the last Site Photographer
+# password it set: DPAPI-encrypted to this machine, in a folder only Administrators and SYSTEM can read.
+$script:PhotographerPassFile = Join-Path $env:ProgramData 'CanfieldDeploymentToolkit\Private\photographer.dat'
+
+function Save-PhotographerPassword([string]$Password) {
+    Add-Type -AssemblyName System.Security
+    $dir = Split-Path -Parent $script:PhotographerPassFile
+    if (-not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        & icacls.exe $dir /inheritance:r /grant:r '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-18:(OI)(CI)F' | Out-Null
+    }
+    $bytes = [System.Security.Cryptography.ProtectedData]::Protect(
+        [System.Text.Encoding]::UTF8.GetBytes($Password), $null, 'LocalMachine')
+    [System.IO.File]::WriteAllBytes($script:PhotographerPassFile, $bytes)
+}
+
+# The saved password, or '' if the toolkit never set one (or the file can't be read).
+function Get-PhotographerPassword {
+    try {
+        Add-Type -AssemblyName System.Security
+        $bytes = [System.IO.File]::ReadAllBytes($script:PhotographerPassFile)
+        return [System.Text.Encoding]::UTF8.GetString(
+            [System.Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, 'LocalMachine'))
+    } catch { return '' }
+}

@@ -66,8 +66,14 @@ $btnName.Add_Click({
 # --- Site Photographer password ---
 $grpPhoto = New-Group $tabComputer "Site Photographer password" 110 95
 
+function Update-PhotoLabel {
+    $current = Get-PhotographerPassword
+    if (-not $current) { $current = '<not set>' }
+    $photoLabel.Text = "New password for the 'Site Photographer' account (current password: $current):"
+}
+
 $photoLabel = New-Object System.Windows.Forms.Label
-$photoLabel.Text     = "New password for the 'Site Photographer' account:"
+Update-PhotoLabel
 $photoLabel.Location = New-Object System.Drawing.Point(12, 22)
 $photoLabel.AutoSize = $true
 $grpPhoto.Controls.Add($photoLabel)
@@ -104,6 +110,9 @@ $btnPhoto.Add_Click({
         $secure = ConvertTo-SecureString $pass -AsPlainText -Force
         Set-LocalUser -Name 'Site Photographer' -Password $secure -PasswordNeverExpires $true `
             -UserMayChangePassword $false -ErrorAction Stop
+        try { Save-PhotographerPassword $pass }
+        catch { Write-Log "Could not save the Site Photographer password: $($_.Exception.Message)" 'WARN' }
+        Update-PhotoLabel
         Show-Message "Site Photographer password updated to '$pass'." 'Information' $pass
     } catch {
         Show-Message "Site Photographer password NOT updated:`n$($_.Exception.Message)" 'Error'
