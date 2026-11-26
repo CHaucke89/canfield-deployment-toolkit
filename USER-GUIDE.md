@@ -32,13 +32,10 @@ Basic computer settings.
   away. Click **Sync Time** to set the clock from the internet time server.
 - **Windows Update**: click **Check for Updates**. The check runs in the
   background and can take a few minutes. It then shows **Up to date** in
-  green, or how many updates are available in amber. Hover over the result
-  to see the update names. Click **Install** to install them; this can take
-  a while. When it finishes, it shows how many installed and asks to
-  restart if Windows needs it.
-- **BitLocker**: shows whether the system drive is encrypted. Green means
-  encrypted, amber means encryption is in progress, and red means not
-  encrypted or no recovery key.
+  green, or how many updates are available in amber, with their names
+  listed below. Click **Install** to install them; this can take a while.
+  When it finishes, the list shows which updates installed, failed or were
+  skipped, and it asks to restart if Windows needs it.
 
 ## Remote Access Tab
 
@@ -51,6 +48,9 @@ Sets up remote support.
   LogMeIn is already installed, it asks before reinstalling.
 - **Resolve MDM**: click **Enroll** to enroll the computer in device
   management. The status line shows whether it is already enrolled.
+- **BitLocker**: shows whether the system drive is encrypted. Green means
+  encrypted, amber means encryption is in progress, and red means not
+  encrypted or no recovery key.
 
 ## Canfield Capture Tab
 

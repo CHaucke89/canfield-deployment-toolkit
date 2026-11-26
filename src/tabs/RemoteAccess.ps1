@@ -1,4 +1,4 @@
-# Tab: Remote Access (LogMeIn, Resolve MDM)
+# Tab: Remote Access (LogMeIn, Resolve MDM, BitLocker)
 
 $tabRemote = New-Object System.Windows.Forms.TabPage; $tabRemote.Text = 'Remote Access'
 [void]$tabs.TabPages.Add($tabRemote)
@@ -125,6 +125,37 @@ function Update-RemoteTab {
     $btnMdm.Enabled = (-not $enrolled) -and [bool]$ppkg
 }
 
+# --- BitLocker ---
+$grpBitLocker = New-Group $tabRemote 'BitLocker Encryption Status' 202 52
+
+$bitLockerInfo = New-Object System.Windows.Forms.Label
+$bitLockerInfo.Location = New-Object System.Drawing.Point(12, 24)
+$bitLockerInfo.Size     = New-Object System.Drawing.Size(440, 18)
+$grpBitLocker.Controls.Add($bitLockerInfo)
+
+$btnBitLocker = New-Object System.Windows.Forms.Button
+$btnBitLocker.Text     = 'Refresh'
+$btnBitLocker.Location = New-Object System.Drawing.Point(460, 17)
+$btnBitLocker.Size     = New-Object System.Drawing.Size(118, 28)
+$grpBitLocker.Controls.Add($btnBitLocker)
+
+# While the drive is encrypting or decrypting, the percentage refreshes every 10 seconds on this tab.
+$bitLockerTimer = New-Object System.Windows.Forms.Timer
+$bitLockerTimer.Interval = 10000
+
+function Update-BitLockerInfo {
+    $status = Get-BitLockerSummary
+    $bitLockerInfo.Text = "Drive ${env:SystemDrive} $status"
+    $bitLockerInfo.ForeColor = if ($status -eq 'Encrypted') { [System.Drawing.Color]::ForestGreen }
+        elseif ($status -match '^(Encrypting|Decrypting)') { [System.Drawing.Color]::DarkGoldenrod }
+        else { [System.Drawing.Color]::Firebrick }
+    $bitLockerTimer.Enabled = ($status -match '^(Encrypting|Decrypting)') -and ($tabs.SelectedTab -eq $tabRemote)
+}
+
+$btnBitLocker.Add_Click({ Update-BitLockerInfo })
+$bitLockerTimer.Add_Tick({ Update-BitLockerInfo })
+
 $tabs.Add_SelectedIndexChanged({
-    if ($tabs.SelectedTab -eq $tabRemote) { Update-RemoteTab }
+    if ($tabs.SelectedTab -eq $tabRemote) { Update-RemoteTab; Update-BitLockerInfo }
+    else { $bitLockerTimer.Enabled = $false }
 })

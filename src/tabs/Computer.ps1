@@ -192,28 +192,34 @@ $btnSyncTime.Add_Click({
 })
 
 # --- Windows Update ---
-$grpUpdate = New-Group $tabComputer 'Windows Update' 294 65
+$grpUpdate = New-Group $tabComputer 'Windows Update' 294 124
 
 $updateInfo = New-Object System.Windows.Forms.Label
 $updateInfo.Text     = 'Click Check for Updates to see if this computer needs updates.'
-$updateInfo.Location = New-Object System.Drawing.Point(12, 28)
-$updateInfo.Size     = New-Object System.Drawing.Size(316, 18)
+$updateInfo.Location = New-Object System.Drawing.Point(12, 24)
+$updateInfo.Size     = New-Object System.Drawing.Size(440, 18)
 $grpUpdate.Controls.Add($updateInfo)
 
-$updateTip = New-Object System.Windows.Forms.ToolTip
-
-$btnInstallUpdates = New-Object System.Windows.Forms.Button
-$btnInstallUpdates.Text     = 'Install'
-$btnInstallUpdates.Location = New-Object System.Drawing.Point(336, 22)
-$btnInstallUpdates.Size     = New-Object System.Drawing.Size(118, 28)
-$btnInstallUpdates.Enabled  = $false
-$grpUpdate.Controls.Add($btnInstallUpdates)
+$updateList = New-Object System.Windows.Forms.ListBox
+$updateList.Location         = New-Object System.Drawing.Point(12, 46)
+$updateList.Size             = New-Object System.Drawing.Size(440, 68)
+$updateList.IntegralHeight   = $false
+$updateList.HorizontalScrollbar = $true
+$updateList.SelectionMode    = 'None'
+$grpUpdate.Controls.Add($updateList)
 
 $btnUpdate = New-Object System.Windows.Forms.Button
 $btnUpdate.Text     = 'Check for Updates'
-$btnUpdate.Location = New-Object System.Drawing.Point(460, 22)
+$btnUpdate.Location = New-Object System.Drawing.Point(460, 18)
 $btnUpdate.Size     = New-Object System.Drawing.Size(118, 28)
 $grpUpdate.Controls.Add($btnUpdate)
+
+$btnInstallUpdates = New-Object System.Windows.Forms.Button
+$btnInstallUpdates.Text     = 'Install'
+$btnInstallUpdates.Location = New-Object System.Drawing.Point(460, 52)
+$btnInstallUpdates.Size     = New-Object System.Drawing.Size(118, 28)
+$btnInstallUpdates.Enabled  = $false
+$grpUpdate.Controls.Add($btnInstallUpdates)
 
 # Runs in a background runspace so the window stays responsive; searching and installing can take a long time.
 # Install searches again because the COM update objects can't be handed between runspaces.
@@ -256,10 +262,11 @@ $updateWorker = {
     }
 }
 
-function Set-UpdateInfo([string]$Text, $Color, [string]$Tip) {
+function Set-UpdateInfo([string]$Text, $Color, [string[]]$Lines) {
     $updateInfo.Text      = $Text
     $updateInfo.ForeColor = $Color
-    $updateTip.SetToolTip($updateInfo, $Tip)
+    $updateList.Items.Clear()
+    foreach ($l in $Lines) { if ($l) { [void]$updateList.Items.Add($l) } }
 }
 
 $updateTimer = New-Object System.Windows.Forms.Timer
@@ -278,13 +285,13 @@ function Start-UpdateWorker([bool]$Install) {
 }
 
 $btnUpdate.Add_Click({
-    Set-UpdateInfo 'Checking for updates...' ([System.Drawing.SystemColors]::ControlText) ''
+    Set-UpdateInfo 'Checking for updates...' ([System.Drawing.SystemColors]::ControlText) @()
     Write-Log 'Checking for Windows updates'
     Start-UpdateWorker $false
 })
 
 $btnInstallUpdates.Add_Click({
-    Set-UpdateInfo 'Installing updates...' ([System.Drawing.SystemColors]::ControlText) ''
+    Set-UpdateInfo 'Installing updates...' ([System.Drawing.SystemColors]::ControlText) @($updateList.Items)
     Write-Log 'Installing Windows updates'
     Start-UpdateWorker $true
 })
@@ -293,8 +300,8 @@ $updateTimer.Add_Tick({
     $shared = $script:updateShared
     if (-not $shared.Done) {
         $text = if ($shared.Install) { 'Installing updates...' } else { 'Checking for updates...' }
-        $updateInfo.Text = '{0} {1:mm\:ss}' -f $text, $script:updateWatch.Elapsed
-        $updateTip.SetToolTip($updateInfo, "$($shared.Step)...")
+        $step = if ($shared.Install -and $shared.Step -ne 'Checking') { " ($($shared.Step.ToLower()))" } else { '' }
+        $updateInfo.Text = '{0} {1:mm\:ss}{2}' -f $text, $script:updateWatch.Elapsed, $step
         return
     }
     $updateTimer.Stop()
@@ -303,7 +310,7 @@ $updateTimer.Add_Tick({
 
     if ($shared.Error) {
         $what = if ($shared.Install) { 'install' } else { 'check for' }
-        Set-UpdateInfo "Could not $what updates." ([System.Drawing.Color]::Firebrick) $shared.Error
+        Set-UpdateInfo "Could not $what updates." ([System.Drawing.Color]::Firebrick) @("Error: $($shared.Error)")
         Write-Log "Windows Update ($($shared.Step.ToLower())) failed: $($shared.Error)" 'ERROR'
         $btnInstallUpdates.Enabled = ($shared.Titles.Count -gt 0)
         return
@@ -319,8 +326,9 @@ $updateTimer.Add_Tick({
         $color = if ($failed.Count) { [System.Drawing.Color]::Firebrick }
             elseif ($shared.RebootRequired) { [System.Drawing.Color]::DarkGoldenrod }
             else { [System.Drawing.Color]::ForestGreen }
-        $tip = @($failed | ForEach-Object { "Failed: $($_.Title)" }) + @($shared.Skipped | ForEach-Object { "Skipped: $_" })
-        Set-UpdateInfo $text $color ($tip -join "`n")
+        $lines = @($shared.Results | ForEach-Object { "$(if ($_.Ok) { 'Installed' } else { 'Failed' }): $($_.Title)" }) +
+            @($shared.Skipped | ForEach-Object { "Skipped (needs user input): $_" })
+        Set-UpdateInfo $text $color $lines
         Write-Log "Windows Update: $text"
         $btnInstallUpdates.Enabled = ($failed.Count -gt 0)
         if ($shared.RebootRequired) {
@@ -337,49 +345,17 @@ $updateTimer.Add_Tick({
 
     $count = $shared.Titles.Count
     if ($count -eq 0) {
-        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." ([System.Drawing.Color]::ForestGreen) ''
+        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." ([System.Drawing.Color]::ForestGreen) @()
         Write-Log 'Windows Update: up to date'
         return
     }
     $noun = if ($count -eq 1) { 'update' } else { 'updates' }
-    Set-UpdateInfo "$count $noun available." ([System.Drawing.Color]::DarkGoldenrod) ($shared.Titles -join "`n")
+    Set-UpdateInfo "$count $noun available." ([System.Drawing.Color]::DarkGoldenrod) $shared.Titles
     Write-Log "Windows Update: $count $noun available"
     foreach ($t in $shared.Titles) { Write-Log "  $t" }
     $btnInstallUpdates.Enabled = $true
 })
 
-# --- BitLocker ---
-$grpBitLocker = New-Group $tabComputer 'BitLocker Encryption Status' 366 52
-
-$bitLockerInfo = New-Object System.Windows.Forms.Label
-$bitLockerInfo.Location = New-Object System.Drawing.Point(12, 24)
-$bitLockerInfo.Size     = New-Object System.Drawing.Size(440, 18)
-$grpBitLocker.Controls.Add($bitLockerInfo)
-
-$btnBitLocker = New-Object System.Windows.Forms.Button
-$btnBitLocker.Text     = 'Refresh'
-$btnBitLocker.Location = New-Object System.Drawing.Point(460, 17)
-$btnBitLocker.Size     = New-Object System.Drawing.Size(118, 28)
-$grpBitLocker.Controls.Add($btnBitLocker)
-
-# While the drive is encrypting or decrypting, the percentage refreshes every 10 seconds on this tab.
-$bitLockerTimer = New-Object System.Windows.Forms.Timer
-$bitLockerTimer.Interval = 10000
-
-function Update-BitLockerInfo {
-    $status = Get-BitLockerSummary
-    $bitLockerInfo.Text = "Drive ${env:SystemDrive} $status"
-    $bitLockerInfo.ForeColor = if ($status -eq 'Encrypted') { [System.Drawing.Color]::ForestGreen }
-        elseif ($status -match '^(Encrypting|Decrypting)') { [System.Drawing.Color]::DarkGoldenrod }
-        else { [System.Drawing.Color]::Firebrick }
-    $bitLockerTimer.Enabled = ($status -match '^(Encrypting|Decrypting)') -and ($tabs.SelectedTab -eq $tabComputer)
-}
-Update-BitLockerInfo
-
-$btnBitLocker.Add_Click({ Update-BitLockerInfo })
-$bitLockerTimer.Add_Tick({ Update-BitLockerInfo })
-
 $tabs.Add_SelectedIndexChanged({
-    if ($tabs.SelectedTab -eq $tabComputer) { Update-TimeInfo; Update-BitLockerInfo }
-    else { $bitLockerTimer.Enabled = $false }
+    if ($tabs.SelectedTab -eq $tabComputer) { Update-TimeInfo }
 })
