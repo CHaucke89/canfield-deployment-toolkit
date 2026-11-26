@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Deploy Toolkit: one window with seven tabs.
-      1) Computer         - renames the machine, sets the 'Site Photographer' password, sets the time zone, syncs the clock, opens Windows Update, shows BitLocker status.
+      1) Computer         - renames the machine, sets the 'Site Photographer' password, sets the time zone, syncs the clock, checks for and installs Windows updates, shows BitLocker status.
       2) Remote Access    - installs LogMeIn for a sponsor from the CSV, enrolls in Resolve MDM.
       3) Canfield Capture - finds setup.exe on connected USB drive(s) or via Browse...; installs the chosen one silently.
       4) Cleanup Tool     - wipes Canfield Capture site data per version, sets Site IDs, expires SSCT passwords.

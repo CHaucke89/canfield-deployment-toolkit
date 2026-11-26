@@ -6,7 +6,7 @@
 
 Windows deployment toolkit for common machine-setup tasks in one GUI:
 
-- Rename the computer, set the `Site Photographer` password, set the time zone and sync the clock, and open Windows Update settings.
+- Rename the computer, set the `Site Photographer` password, set the time zone and sync the clock, and check for and install Windows updates.
 - Create, reset and delete SSCT site users, and create the `SharedAdmin` account.
 - Install LogMeIn using a sponsor-specific Deploy ID from a CSV file, enroll in Resolve MDM, and manage the Canfield scripts.
 - Find and run Canfield Capture `setup.exe` installers from USB drives, or browse to one anywhere else.
@@ -161,7 +161,7 @@ git push origin v1.0.0
 - Computer name: shows the current name, validates the new one (1-15 letters, digits or hyphens; no leading/trailing hyphen; not only digits), renames via `Rename-Computer` as soon as you click, then offers to restart.
 - Site Photographer password: the entered password is normalized (symbols, spaces and numbers removed, letters lower-cased); the account is set to never expire and the user cannot change the password.
 - Date, time and time zone: picking a time zone from the dropdown sets it right away (`Set-TimeZone`). **Sync Time** starts the Windows Time service if needed and syncs the clock with the time server (`w32tm /resync /force`).
-- Windows Update: opens Windows Update in Settings.
+- Windows Update: **Check for Updates** searches for updates in the background using the Windows Update Agent API and shows the result (up to date, number of updates available with their titles on hover, or the error). When updates are found, **Install** downloads and installs them in the background, then shows how many installed and offers to restart if needed. Updates that need user input (their own prompts) are skipped and listed on hover.
 - BitLocker Encryption Status: shows whether the system drive is encrypted (green), encrypting or decrypting with the percentage done (amber, refreshed every 10 seconds while the tab is open), or not encrypted / missing a recovery key (red).
 
 ### Remote Access Tab
