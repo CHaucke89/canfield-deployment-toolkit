@@ -194,19 +194,89 @@ $btnSyncTime.Add_Click({
 # --- Windows Update ---
 $grpUpdate = New-Group $tabComputer 'Windows Update' 294 65
 
-$updateInfo = New-Object System.Windows.Forms.Label
-$updateInfo.Text     = 'Opens Windows Update in Settings so you can install updates.'
+$updateInfo = New-Object System.Windows.Forms.LinkLabel
+$updateInfo.Text     = 'Click Check for Updates to see if this computer needs updates.'
+$updateInfo.LinkArea = New-Object System.Windows.Forms.LinkArea(0, 0)
 $updateInfo.Location = New-Object System.Drawing.Point(12, 28)
-$updateInfo.AutoSize = $true
+$updateInfo.Size     = New-Object System.Drawing.Size(440, 18)
 $grpUpdate.Controls.Add($updateInfo)
 
+$updateTip = New-Object System.Windows.Forms.ToolTip
+
 $btnUpdate = New-Object System.Windows.Forms.Button
-$btnUpdate.Text     = 'Open Settings'
+$btnUpdate.Text     = 'Check for Updates'
 $btnUpdate.Location = New-Object System.Drawing.Point(460, 22)
 $btnUpdate.Size     = New-Object System.Drawing.Size(118, 28)
 $grpUpdate.Controls.Add($btnUpdate)
 
+# Runs in a background runspace so the window stays responsive; the search can take minutes.
+$updateSearch = {
+    param($shared)
+    try {
+        $session = New-Object -ComObject Microsoft.Update.Session
+        $session.ClientApplicationID = 'Canfield Deployment Toolkit'
+        $result = $session.CreateUpdateSearcher().Search('IsInstalled=0 and IsHidden=0')
+        if ($result.ResultCode -ge 4) { throw "search failed (result code $($result.ResultCode))" }
+        $shared.Titles = @(foreach ($u in $result.Updates) { $u.Title })
+    } catch {
+        $shared.Error = $_.Exception.Message
+    }
+    $shared.Done = $true
+}
+
+function Set-UpdateInfo([string]$Text, $Color, [bool]$Link) {
+    $updateInfo.Text      = $Text
+    $updateInfo.ForeColor = $Color
+    $updateInfo.LinkArea  = if ($Link) { New-Object System.Windows.Forms.LinkArea($Text.IndexOf('Open Settings'), 13) }
+        else { New-Object System.Windows.Forms.LinkArea(0, 0) }
+}
+
+$updateTimer = New-Object System.Windows.Forms.Timer
+$updateTimer.Interval = 500
+
 $btnUpdate.Add_Click({
+    $btnUpdate.Enabled = $false
+    $updateTip.SetToolTip($updateInfo, '')
+    Set-UpdateInfo 'Checking for updates...' ([System.Drawing.SystemColors]::ControlText) $false
+    Write-Log 'Checking for Windows updates'
+    $script:updateShared = [hashtable]::Synchronized(@{ Done = $false; Titles = @(); Error = $null })
+    $script:updateWatch  = [System.Diagnostics.Stopwatch]::StartNew()
+    $script:updatePs     = [PowerShell]::Create()
+    [void]$script:updatePs.AddScript($updateSearch).AddArgument($script:updateShared)
+    [void]$script:updatePs.BeginInvoke()
+    $updateTimer.Start()
+})
+
+$updateTimer.Add_Tick({
+    $shared = $script:updateShared
+    if (-not $shared.Done) {
+        $updateInfo.Text = 'Checking for updates... {0:mm\:ss}' -f $script:updateWatch.Elapsed
+        return
+    }
+    $updateTimer.Stop()
+    $script:updatePs.Dispose()
+    $btnUpdate.Enabled = $true
+
+    if ($shared.Error) {
+        Set-UpdateInfo 'Could not check for updates. Open Settings to try there.' ([System.Drawing.Color]::Firebrick) $true
+        $updateTip.SetToolTip($updateInfo, $shared.Error)
+        Write-Log "Windows Update check failed: $($shared.Error)" 'ERROR'
+        return
+    }
+    $count = $shared.Titles.Count
+    if ($count -eq 0) {
+        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." ([System.Drawing.Color]::ForestGreen) $false
+        Write-Log 'Windows Update: up to date'
+        return
+    }
+    $noun = if ($count -eq 1) { 'update' } else { 'updates' }
+    Set-UpdateInfo "$count $noun available. Open Settings to install." ([System.Drawing.Color]::DarkGoldenrod) $true
+    $updateTip.SetToolTip($updateInfo, ($shared.Titles -join "`n"))
+    Write-Log "Windows Update: $count $noun available"
+    foreach ($t in $shared.Titles) { Write-Log "  $t" }
+})
+
+$updateInfo.Add_LinkClicked({
     try { Start-Process 'ms-settings:windowsupdate' }
     catch { Show-Message "Could not open Windows Update:`n$($_.Exception.Message)" 'Error' }
 })

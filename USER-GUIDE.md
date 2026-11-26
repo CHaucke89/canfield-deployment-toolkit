@@ -30,8 +30,10 @@ Basic computer settings.
   made lower case. The password never expires.
 - **Time zone**: pick the site's time zone from the list. It applies right
   away. Click **Sync Time** to set the clock from the internet time server.
-- **Windows Update**: **Open Settings** opens Windows Update so you can
-  install updates.
+- **Windows Update**: click **Check for Updates**. The check runs in the
+  background and can take a few minutes. It then shows **Up to date** in
+  green, or how many updates are available in amber. Hover over the result
+  to see the update names, and click **Open Settings** to install them.
 - **BitLocker**: shows whether the system drive is encrypted. Green means
   encrypted, amber means encryption is in progress, and red means not
   encrypted or no recovery key.
