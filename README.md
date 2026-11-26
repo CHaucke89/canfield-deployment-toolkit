@@ -1,5 +1,9 @@
 # Canfield Deployment Toolkit
 
+[![Build](https://github.com/CHaucke89/canfield-deployment-toolkit/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/CHaucke89/canfield-deployment-toolkit/actions/workflows/build.yml)
+[![Release](https://github.com/CHaucke89/canfield-deployment-toolkit/actions/workflows/release.yml/badge.svg)](https://github.com/CHaucke89/canfield-deployment-toolkit/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/github/license/CHaucke89/canfield-deployment-toolkit)](LICENSE)
+
 Windows deployment toolkit for common machine-setup tasks in one GUI:
 
 - Rename the computer, set the `Site Photographer` password, set the time zone and sync the clock, and open Windows Update settings.
@@ -10,6 +14,8 @@ Windows deployment toolkit for common machine-setup tasks in one GUI:
 - Check the machine's status and save a QC report.
 
 The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe`). For how to use each tab, see the [User Guide](USER-GUIDE.md).
+
+`CDT.exe` builds from `master` and releases are Authenticode-signed with the repository owner's certificate through Azure Artifact Signing. To verify, open the exe's Properties and check the Digital Signatures tab.
 
 ## Project Files
 
@@ -23,8 +29,8 @@ The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe
 - `assets\toolkit.ico`: Icon embedded into the EXE (file icon, window and taskbar). Required by the build.
 - `LICENSE`: MIT License.
 - `build_bypass.cmd`: Convenience wrapper to run the build script with execution policy bypass (run it from the repo folder).
-- `.github/workflows/build-exe.yml`: Builds EXE on every push and uploads it as an artifact.
-- `.github/workflows/release-exe.yml`: Builds EXE on version tag push and publishes it to a GitHub Release.
+- `.github/workflows/build.yml`: Builds EXE on every push and uploads it as an artifact.
+- `.github/workflows/release.yml`: Builds EXE on version tag push and publishes it to a GitHub Release.
 
 ## Requirements
 
@@ -124,21 +130,21 @@ Output:
 
 ### Push Build Workflow
 
-Workflow: `.github/workflows/build-exe.yml`
+Workflow: `.github/workflows/build.yml`
 
 - Trigger: every push (plus manual dispatch).
 - Runner: `windows-latest`.
 - Action: runs `Build-Toolkit-Exe.ps1`, then signs `build/CDT.exe` with Azure Artifact Signing (on `master` only; other branches upload it unsigned).
-- Artifact: `CDT-exe` containing `build/CDT.exe`.
+- Artifact: `CDT.exe` (uploaded as the exe itself, not a zip).
 
 ### Release Workflow
 
-Workflow: `.github/workflows/release-exe.yml`
+Workflow: `.github/workflows/release.yml`
 
 - Trigger: tag pushes matching `v*` (for example `v1.0.0`) and manual dispatch.
 - Runner: `windows-latest`.
 - Action: builds EXE with the tag as its version (`v1.2.0` becomes `1.2.0.0`), signs it with Azure Artifact Signing, then creates/updates the GitHub Release for the tag. Manual runs from a branch keep `1.0.0.0`.
-- Asset uploaded: `build/CDT.exe`.
+- Asset uploaded: `CDT-<tag>.exe` (for example `CDT-v1.2.0.exe`).
 - Requires a `release` environment in repo settings; the Azure federated credential must trust it.
 
 Create a release by pushing a version tag:
