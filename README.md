@@ -128,7 +128,7 @@ Workflow: `.github/workflows/build-exe.yml`
 
 - Trigger: every push (plus manual dispatch).
 - Runner: `windows-latest`.
-- Action: runs `Build-Toolkit-Exe.ps1`, then signs `build/CDT.exe` with Azure Artifact Signing.
+- Action: runs `Build-Toolkit-Exe.ps1`, then signs `build/CDT.exe` with Azure Artifact Signing (on `master` only; other branches upload it unsigned).
 - Artifact: `CDT-exe` containing `build/CDT.exe`.
 
 ### Release Workflow
