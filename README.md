@@ -1,8 +1,8 @@
 # Canfield Deployment Toolkit
 
-[![Build](https://github.com/CHaucke89/canfield-deployment-toolkit/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/CHaucke89/canfield-deployment-toolkit/actions/workflows/build.yml)
-[![Release](https://github.com/CHaucke89/canfield-deployment-toolkit/actions/workflows/release.yml/badge.svg)](https://github.com/CHaucke89/canfield-deployment-toolkit/actions/workflows/release.yml)
-[![License: MIT](https://img.shields.io/github/license/CHaucke89/canfield-deployment-toolkit)](LICENSE)
+[![Build](https://github.com/chaucke89/canfield-deployment-toolkit/actions/workflows/build.yml/badge.svg)](https://github.com/chaucke89/canfield-deployment-toolkit/actions/workflows/build.yml)
+[![Latest release](https://img.shields.io/github/v/release/chaucke89/canfield-deployment-toolkit)](https://github.com/chaucke89/canfield-deployment-toolkit/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Windows deployment toolkit for common machine-setup tasks in one GUI:
 
