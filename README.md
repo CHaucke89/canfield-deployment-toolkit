@@ -128,7 +128,7 @@ Workflow: `.github/workflows/build-exe.yml`
 
 - Trigger: every push (plus manual dispatch).
 - Runner: `windows-latest`.
-- Action: runs `Build-Toolkit-Exe.ps1`.
+- Action: runs `Build-Toolkit-Exe.ps1`, then signs `build/CDT.exe` with Azure Artifact Signing (on `master` only; other branches upload it unsigned).
 - Artifact: `CDT-exe` containing `build/CDT.exe`.
 
 ### Release Workflow
@@ -137,8 +137,9 @@ Workflow: `.github/workflows/release-exe.yml`
 
 - Trigger: tag pushes matching `v*` (for example `v1.0.0`) and manual dispatch.
 - Runner: `windows-latest`.
-- Action: builds EXE with the tag as its version (`v1.2.0` becomes `1.2.0.0`), then creates/updates the GitHub Release for the tag. Manual runs from a branch keep `1.0.0.0`.
+- Action: builds EXE with the tag as its version (`v1.2.0` becomes `1.2.0.0`), signs it with Azure Artifact Signing, then creates/updates the GitHub Release for the tag. Manual runs from a branch keep `1.0.0.0`.
 - Asset uploaded: `build/CDT.exe`.
+- Requires a `release` environment in repo settings; the Azure federated credential must trust it.
 
 Create a release by pushing a version tag:
 

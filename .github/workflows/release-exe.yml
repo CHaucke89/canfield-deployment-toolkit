@@ -7,11 +7,13 @@ on:
   workflow_dispatch:
 
 permissions:
+  id-token: write
   contents: write
 
 jobs:
   release-exe:
     runs-on: windows-latest
+    environment: release
 
     steps:
       - name: Checkout repository
@@ -35,6 +37,25 @@ jobs:
           } else {
             ./Build-Toolkit-Exe.ps1
           }
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          allow-no-subscriptions: true
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Sign CDT.exe
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: https://eus.codesigning.azure.net/
+          signing-account-name: haucke-labs
+          certificate-profile-name: Personal
+          files-folder: build
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
 
       - name: Create GitHub Release and upload EXE
         uses: softprops/action-gh-release@v2
