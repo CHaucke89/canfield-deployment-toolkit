@@ -161,13 +161,13 @@ git push origin v1.0.0
 - Computer name: shows the current name, validates the new one (1-15 letters, digits or hyphens; no leading/trailing hyphen; not only digits), renames via `Rename-Computer` as soon as you click, then offers to restart.
 - Site Photographer password: the entered password is normalized (symbols, spaces and numbers removed, letters lower-cased); the account is set to never expire and the user cannot change the password.
 - Date, time and time zone: picking a time zone from the dropdown sets it right away (`Set-TimeZone`). **Sync Time** starts the Windows Time service if needed and syncs the clock with the time server (`w32tm /resync /force`).
-- Windows Update: **Check for Updates** searches for updates in the background using the Windows Update Agent API and shows the result (up to date, number of updates available with their titles on hover, or the error). When updates are found, **Install** downloads and installs them in the background, then shows how many installed and offers to restart if needed. Updates that need user input (their own prompts) are skipped and listed on hover.
-- BitLocker Encryption Status: shows whether the system drive is encrypted (green), encrypting or decrypting with the percentage done (amber, refreshed every 10 seconds while the tab is open), or not encrypted / missing a recovery key (red).
+- Windows Update: **Check for Updates** searches for updates in the background using the Windows Update Agent API and shows the result (up to date, updates available, or the error) with the update titles in a list below. When updates are found, **Install** downloads and installs them in the background, then lists each update as installed, failed or skipped and offers to restart if needed. Updates that need user input (their own prompts) are skipped.
 
 ### Remote Access Tab
 
 - LogMeIn: shows whether LogMeIn is installed, loads the sponsor list from CSV, downloads the latest `logmein.msi` via `curl.exe` and installs it silently with the selected `DEPLOYID` using `msiexec.exe`. Asks first if LogMeIn is already installed.
 - Resolve MDM: shows the enrollment status and enrolls with `CanfieldScientific.ppkg` (`Install-ProvisioningPackage`).
+- BitLocker Encryption Status: shows whether the system drive is encrypted (green), encrypting or decrypting with the percentage done (amber, refreshed every 10 seconds while the tab is open), or not encrypted / missing a recovery key (red).
 
 ### Canfield Capture Tab
 
