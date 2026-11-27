@@ -1,0 +1,53 @@
+name: Screenshot toolkit window
+
+on:
+  workflow_dispatch:
+    inputs:
+      steps:
+        description: Steps script for the driver (repo-relative)
+        default: .claude/skills/run-canfield-deployment-toolkit/steps-default.ps1
+  push:
+    paths:
+      - Install-Toolkit.ps1
+      - src/**
+      - .claude/skills/run-canfield-deployment-toolkit/**
+      - .github/workflows/screenshots.yml
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Smoke test
+        shell: pwsh
+        run: ./.claude/skills/run-canfield-deployment-toolkit/smoke.ps1
+
+      - name: Launch toolkit and take screenshots
+        shell: powershell
+        env:
+          STEPS: ${{ inputs.steps || '.claude/skills/run-canfield-deployment-toolkit/steps-default.ps1' }}
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File .claude\skills\run-canfield-deployment-toolkit\driver.ps1 -Steps $env:STEPS -OutDir screenshots
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      # Artifact downloads need blob storage hosts; the run log only needs api.github.com.
+      - name: Print screenshots (base64)
+        if: always()
+        shell: pwsh
+        run: |
+          Get-ChildItem screenshots -Filter *.png | ForEach-Object {
+            "PNG-BEGIN $($_.Name)"
+            [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName)) -split '(.{4000})' | Where-Object { $_ }
+            "PNG-END $($_.Name)"
+          }
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: error
