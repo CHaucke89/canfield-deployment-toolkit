@@ -8,3 +8,9 @@ Set-Text $txtRequest '00000001'
 Write-Host "response code: $($txtResponse.Text)"
 if ($txtResponse.Text -ne '1000007B') { throw "Expected response 1000007B, got '$($txtResponse.Text)'" }
 Save-Shot 'response-code'
+
+# An invalid computer name shows a warning box (nothing is renamed); the driver captures and closes it.
+Select-Tab 'Computer'
+Set-Text $nameBox '-bad-'
+Invoke-Click $btnName
+if ($script:dialogs -ne 1) { throw "Expected 1 dialog, saw $script:dialogs" }
