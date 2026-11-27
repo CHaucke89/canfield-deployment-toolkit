@@ -6,7 +6,8 @@
 
 .PARAMETER Version
     Version stamped into the exe (file and product version). Accepts a release tag such as 'v1.2.0';
-    a leading 'v' is dropped and missing parts are filled with 0 (v1.2.0 -> 1.2.0.0). Defaults to 1.0.0.0.
+    a leading 'v' is dropped and missing parts are filled with 0 (v1.2.0 -> 1.2.0.0). When omitted, it comes
+    from the newest v* git tag plus the commits since it (v2.2.1 + 5 commits -> 2.2.1.5), else 0.0.0.0.
 
 .PARAMETER SponsorsPath
     sponsors.csv to embed. When omitted, an interactive build asks for it (cancel or blank skips it).
@@ -16,7 +17,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = '1.0.0.0',
+    [string]$Version,
     [string]$SponsorsPath,
     [switch]$NoPrompt
 )
@@ -25,6 +26,20 @@ $src = Join-Path $PSScriptRoot 'Install-Toolkit.ps1'
 $tmp = Join-Path $PSScriptRoot 'Install-Toolkit.build.ps1'
 $out = Join-Path $PSScriptRoot 'build\CDT.exe'
 $icon = Join-Path $PSScriptRoot 'assets\toolkit.ico'
+
+# Newest v* tag reachable from HEAD, with the commits since it as the revision: v2.2.1-5-gabc1234 -> 2.2.1.5.
+# Falls back to 0.0.0.0 (shown as 'dev') when git or the tags are missing.
+function Get-GitVersion {
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return '0.0.0.0' }
+    # Windows PowerShell 5.1 turns native stderr into errors, which 'Stop' would throw on.
+    $ErrorActionPreference = 'Continue'
+    $desc = git -C $PSScriptRoot describe --tags --long --match 'v[0-9]*' 2>$null
+    if ($LASTEXITCODE -eq 0 -and "$desc" -match '^v(\d+)\.(\d+)(?:\.(\d+))?-(\d+)-g[0-9a-f]+$') {
+        return '{0}.{1}.{2}.{3}' -f $Matches[1], $Matches[2], [int]$Matches[3], $Matches[4]
+    }
+    return '0.0.0.0'
+}
+if (-not $Version) { $Version = Get-GitVersion }
 
 # PS2EXE needs a 4-part numeric version (major.minor.build.revision).
 $parsed = $null
