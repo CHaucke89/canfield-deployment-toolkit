@@ -187,15 +187,20 @@ function Set-Theme([string]$Name, [bool]$Save = $true) {
     }
 }
 
+# The part of a tab header kept while dark: Windows draws a light outline on the outer 2 pixels.
+function Get-TabFace($TabControl, [int]$Index) {
+    $r = $TabControl.GetTabRect($Index)
+    $r.Inflate(-2, -2)
+    return $r
+}
+
 # Windows paints the tab strip and page border light whatever the colors. While dark, the TabControl's Region is cut
 # down to the tab headers and the page area, so the form's dark background shows everywhere else.
 function Update-TabRegion($TabControl) {
     if (-not $script:Theme.Dark) { $TabControl.Region = $null; return }
     $region = New-Object System.Drawing.Region($TabControl.DisplayRectangle)
     for ($i = 0; $i -lt $TabControl.TabCount; $i++) {
-        $r = $TabControl.GetTabRect($i)
-        $r.Inflate(-1, -1)
-        $region.Union($r)
+        $region.Union((Get-TabFace $TabControl $i))
     }
     $TabControl.Region = $region
 }
@@ -205,18 +210,19 @@ $tabs.Add_DrawItem({
     param($sender, $e)
     $t = $script:Theme
     $selected = ($e.Index -eq $sender.SelectedIndex)
+    $face = Get-TabFace $sender $e.Index
     $back = if ($selected) { $t.Button } else { $t.Surface }
     $brush = New-Object System.Drawing.SolidBrush($back)
-    $e.Graphics.FillRectangle($brush, $e.Bounds)
+    $e.Graphics.FillRectangle($brush, $face)
     $brush.Dispose()
     if ($selected) {
         $bar = New-Object System.Drawing.SolidBrush($t.Accent)
-        $e.Graphics.FillRectangle($bar, $e.Bounds.X, ($e.Bounds.Bottom - 3), $e.Bounds.Width, 3)
+        $e.Graphics.FillRectangle($bar, $face.X, ($face.Bottom - 3), $face.Width, 3)
         $bar.Dispose()
     }
     $fore = if ($selected) { $t.Text } else { $t.Dim }
     $flags = [System.Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, NoPrefix'
-    [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.TabPages[$e.Index].Text, $sender.Font, $e.Bounds, $fore, $flags)
+    [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.TabPages[$e.Index].Text, $sender.Font, $face, $fore, $flags)
 })
 
 # --- Toggle (bottom left of the main window, next to Close) ---
