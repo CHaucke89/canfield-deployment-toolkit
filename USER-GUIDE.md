@@ -9,7 +9,8 @@ the job. This guide explains what each tab is for and how to use it.
 Have these ready:
 
 - A USB drive with the Canfield Capture installer folders (each with a `setup.exe`).
-- `sponsors.csv` next to `CDT.exe`, for installing LogMeIn.
+- The sponsor list for LogMeIn. `CDT.exe` has one built in; a `sponsors.csv`
+  next to `CDT.exe` takes its place if present.
 - The `Scripts` folder next to `CDT.exe`, for the Canfield scripts and Resolve MDM.
 - A network connection (LogMeIn is downloaded during install).
 
@@ -23,15 +24,17 @@ Basic computer settings.
 ![Computer tab](images/01-computer.png)
 
 - **Rename Computer**: type the new name (up to 15 letters, digits or
-  hyphens) and click **Rename Computer**. The toolkit offers to restart,
-  which is needed for the new name to take effect.
-- **Site Photographer password**: type the password and click
+  hyphens) and click **Rename Computer**. The current name shows above the
+  box, along with the new name until you restart. The toolkit offers to
+  restart, which is needed for the new name to take effect.
+- **Site Photographer password**: the label shows the current password, or
+  `<not set>` if the toolkit has not set one. Type the new password and click
   **Set Password**. Symbols, spaces and numbers are removed and letters are
   made lower case. The password never expires.
 - **Time zone**: pick the site's time zone from the list. It applies right
   away. Click **Sync Time** to set the clock from the internet time server.
 - **Windows Update**: click **Check for Updates**. The check runs in the
-  background and can take a few minutes. It then shows **Up to date** in
+  background and can take a few minutes, with a running timer. It then shows **Up to date** in
   green, or how many updates are available in amber, with their names
   listed below. Click **Install** to install them; this can take a while.
   When it finishes, the list shows which updates installed, failed or were
@@ -44,13 +47,17 @@ Sets up remote support.
 ![Remote Access tab](images/02-remote-access.png)
 
 - **LogMeIn**: choose the study sponsor and click **Install LogMeIn**. The
-  toolkit downloads and installs LogMeIn into that sponsor's account. If
-  LogMeIn is already installed, it asks before reinstalling.
+  toolkit downloads and installs LogMeIn into that sponsor's account. The
+  status line shows whether LogMeIn is installed, and if it is, the toolkit
+  asks before reinstalling.
 - **Resolve MDM**: click **Enroll** to enroll the computer in device
   management. The status line shows whether it is already enrolled.
-- **BitLocker**: shows whether the system drive is encrypted. Green means
-  encrypted, amber means encryption is in progress, and red means not
-  encrypted or no recovery key.
+  Enrolling needs `CanfieldScientific.ppkg` in the `Scripts` folder.
+- **BitLocker Encryption Status**: shows whether the system drive is
+  encrypted. Green means encrypted, amber means encrypting or decrypting
+  (with the percentage, which updates every 10 seconds), and red means not
+  encrypted, protection off, or no recovery key. Click **Refresh** to check
+  again.
 
 ## Canfield Capture Tab
 
@@ -85,10 +92,10 @@ used much as we move to SSO.
 - **Create site user**: enter first and last name (and a prefix if
   needed). The username fills in automatically and can be edited. The
   temporary password is `Photo321`; the user must choose a new one at first
-  sign-in.
+  sign-in. New users are added to the `SSCT` group.
 - If every installed protocol uses single sign-on (SSO), a red note under
   **Create User** says so, since local users are usually not needed.
-- Select a user in the list to **Reset Password**, **Change Name** or
+- The list shows the users in the `SSCT` group. Select a user to **Reset Password**, **Change Name** or
   **Delete User**. Built-in accounts (Site Photographer, SharedAdmin,
   Administrator, and the signed-in account) cannot be deleted.
 - **Create SharedAdmin Account** asks for a password and creates the shared
@@ -116,9 +123,10 @@ A final check of the whole setup, and the QC report.
 
 ![Summary tab](images/06-summary.png)
 
-1. Review the list: computer name, service tag, time zone, Wi-Fi, BitLocker,
-   LogMeIn, Resolve MDM, Canfield Capture versions, site users, and each
-   protocol's Site ID.
+1. Review the list: computer name, service tag, model, date and time, time
+   zone, Wi-Fi, BitLocker, LogMeIn, Resolve MDM, Canfield Capture versions
+   and site users. Below it, each installed protocol shows its version,
+   Site ID and whether it uses SSO. Click **Refresh** to check again.
 2. Enter your initials and any comments.
 3. Click **Save Report**. It saves a picture of the window (JPG) and a text
    file with the same details.
@@ -143,6 +151,7 @@ missing.
 | Problem | What to do |
 |---|---|
 | No sponsors in the LogMeIn list | Put `sponsors.csv` next to `CDT.exe` and restart the toolkit. |
+| Resolve MDM says `CanfieldScientific.ppkg` not found | Put the `Scripts` folder, with the `.ppkg` inside, next to `CDT.exe`. |
 | Script or Resolve MDM buttons are greyed out | Put the `Scripts` folder next to `CDT.exe`. |
 | "No installer found on the USB drive" | Check the drive has folders containing `setup.exe` and click **Scan USB**, or click **Browse...** and pick the `setup.exe`. |
 | Canfield Capture install reports an error code | Run that installer's `setup.exe` from the USB drive by hand. |
