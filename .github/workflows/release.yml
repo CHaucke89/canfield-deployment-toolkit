@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history and tags, so the build can version itself from the latest tag
 
       - name: Prepare PowerShell module sources
         shell: pwsh
@@ -31,7 +33,7 @@ jobs:
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
-          # Stamp the exe with the tag's version (v1.2.0 -> 1.2.0.0); manual runs off a branch keep the default.
+          # Stamp the exe with the tag's version (v1.2.0 -> 1.2.0.0); manual runs off a branch use the latest tag.
           if ($env:GITHUB_REF_TYPE -eq 'tag') {
             ./Build-Toolkit-Exe.ps1 -Version $env:GITHUB_REF_NAME
           } else {

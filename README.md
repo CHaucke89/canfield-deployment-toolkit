@@ -116,7 +116,7 @@ powershell -ExecutionPolicy Bypass -File .\Build-Toolkit-Exe.ps1 -SponsorsPath C
 powershell -ExecutionPolicy Bypass -File .\Build-Toolkit-Exe.ps1 -NoPrompt
 ```
 
-Optionally stamp a version into the EXE (defaults to `1.0.0.0`; a leading `v` is dropped and missing parts become `0`):
+The EXE's version comes from the newest `v*` git tag plus the commits since it (`v2.2.1` with 5 newer commits becomes `2.2.1.5`, shown as `v2.2.1+5` in the window header). Without git or tags it is `0.0.0.0`, shown as `dev`. Pass `-Version` to set it yourself (a leading `v` is dropped and missing parts become `0`):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Build-Toolkit-Exe.ps1 -Version v1.2.0
@@ -141,7 +141,7 @@ Workflow: `.github/workflows/build.yml`
 
 - Trigger: every push (plus manual dispatch).
 - Runner: `windows-latest`.
-- Action: runs `Build-Toolkit-Exe.ps1`, then signs `build/CDT.exe` with Azure Artifact Signing (on `master` only; other branches upload it unsigned).
+- Action: runs `Build-Toolkit-Exe.ps1` (versioned from the latest tag, for example `v2.2.1+5`), then signs `build/CDT.exe` with Azure Artifact Signing (on `master` only; other branches upload it unsigned).
 - Artifact: `CDT.exe` (uploaded as the exe itself, not a zip).
 
 ### Release Workflow
@@ -150,7 +150,7 @@ Workflow: `.github/workflows/release.yml`
 
 - Trigger: tag pushes matching `v*` (for example `v1.0.0`) and manual dispatch.
 - Runner: `windows-latest`.
-- Action: builds EXE with the tag as its version (`v1.2.0` becomes `1.2.0.0`), signs it with Azure Artifact Signing, then creates/updates the GitHub Release for the tag. Manual runs from a branch keep `1.0.0.0`.
+- Action: builds EXE with the tag as its version (`v1.2.0` becomes `1.2.0.0`), signs it with Azure Artifact Signing, then creates/updates the GitHub Release for the tag. Manual runs from a branch use the latest tag.
 - Asset uploaded: `CDT-<tag>.exe` (for example `CDT-v1.2.0.exe`).
 - Requires a `release` environment in repo settings; the Azure federated credential must trust it.
 

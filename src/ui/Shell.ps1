@@ -28,9 +28,14 @@ $hdrSep.Font = $hdrApp.Font
 $hdrComputer = New-Label $header $env:COMPUTERNAME ($hdrSep.Left + $hdrSep.PreferredWidth + 4) 16 'AccentText'
 $hdrComputer.Font = New-Object System.Drawing.Font('Consolas', 10.5)
 
+# Release builds show the tag (v2.2.1); builds after it add the commit count (v2.2.1+5); untagged builds show dev.
 if ($isExe) {
-    $ver = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($procPath).ProductVersion -replace '\.0$', ''
-    $hdrVer = New-Label $header "v$ver" 0 16 'Dim'
+    $v = $null
+    [void][version]::TryParse([System.Diagnostics.FileVersionInfo]::GetVersionInfo($procPath).FileVersion, [ref]$v)
+    $verText = if (-not $v -or $v -eq [version]'0.0.0.0') { 'dev' }
+               elseif ($v.Revision -gt 0) { 'v{0}.{1}.{2}+{3}' -f $v.Major, $v.Minor, $v.Build, $v.Revision }
+               else { 'v{0}.{1}.{2}' -f $v.Major, $v.Minor, $v.Build }
+    $hdrVer = New-Label $header $verText 0 16 'Dim'
     Set-Mono $hdrVer
     $hdrVer.Left = $client.Width - $hdrVer.PreferredWidth - 16
 }
