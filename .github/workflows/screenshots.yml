@@ -32,6 +32,17 @@ jobs:
           powershell -NoProfile -ExecutionPolicy Bypass -File .claude\skills\run-canfield-deployment-toolkit\driver.ps1 -Steps $env:STEPS -OutDir screenshots
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
+      # Artifact downloads need blob storage hosts; the run log only needs api.github.com.
+      - name: Print screenshots (base64)
+        if: always()
+        shell: pwsh
+        run: |
+          Get-ChildItem screenshots -Filter *.png | ForEach-Object {
+            "PNG-BEGIN $($_.Name)"
+            [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName)) -split '(.{4000})' | Where-Object { $_ }
+            "PNG-END $($_.Name)"
+          }
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
