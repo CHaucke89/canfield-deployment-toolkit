@@ -79,7 +79,7 @@ Save-ScreenShot 'canfield-capture'
 Select-Tab 'Users'
 $userList.Items.Clear()
 foreach ($u in @(@('adoe', 'Alex Doe'), @('jsmith', 'Dr. Jamie Smith'), @('tlee', 'Taylor Lee'))) {
-    [void]$userList.Items.Add([pscustomobject]@{ Name = $u[0]; FullName = $u[1]; Display = '{0}    ({1})' -f $u[0], $u[1] })
+    [void]$userList.Items.Add([pscustomobject]@{ Name = $u[0]; FullName = $u[1]; Display = ('{0}    ({1})' -f $u[0], $u[1]) })
 }
 $userList.SelectedIndex = 0
 Set-Text $userFirst 'Sam'
