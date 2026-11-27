@@ -33,7 +33,7 @@ The workflow runs on every push that touches `Install-Toolkit.ps1`, `src/**`, th
 any branch. It runs the smoke test, then `driver.ps1` with `steps-default.ps1`: one shot per tab, the response
 code for `00000001` (must be `1000007B`), an invalid computer name that raises one warning box, then every
 tab again in the dark theme (`NN-<tab>-dark.png`, plus one real screen capture of Summary, since
-`DrawToBitmap` ignores the dark tab strip and title bar) and a return to light.
+`DrawToBitmap` ignores the dark title bar and scroll bars) and a return to light.
 
 ```bash
 git push -u origin <branch>
