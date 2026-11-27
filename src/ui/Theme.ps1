@@ -160,6 +160,28 @@ function Initialize-ListViewTheme($ListView) {
     })
 }
 
+# Combo boxes draw their own items; Windows otherwise paints the selected text white-on-blue whatever the colors.
+function Initialize-ComboTheme($Combo) {
+    if ($Combo.DrawMode -ne 'Normal') { return }
+    $Combo.DrawMode = 'OwnerDrawFixed'
+    $Combo.ItemHeight = 18
+    $Combo.Add_DrawItem({
+        param($sender, $e)
+        $t = $script:Theme
+        $edit = ($e.State -band [System.Windows.Forms.DrawItemState]::ComboBoxEdit) -ne 0
+        $selected = ($e.State -band [System.Windows.Forms.DrawItemState]::Selected) -ne 0
+        $hot = $selected -and -not $edit
+        $back = New-Brush $(if ($hot) { $t.Accent } else { $t.Input })
+        $e.Graphics.FillRectangle($back, $e.Bounds)
+        $back.Dispose()
+        if ($e.Index -lt 0) { return }
+        $fore = if ($hot) { $t.AccentText } elseif ($sender.Enabled) { $t.Text } else { $t.Dim }
+        $r = New-Object System.Drawing.Rectangle(($e.Bounds.X + 3), $e.Bounds.Y, ($e.Bounds.Width - 3), $e.Bounds.Height)
+        $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, EndEllipsis, NoPrefix'
+        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.GetItemText($sender.Items[$e.Index]), $sender.Font, $r, $fore, $flags)
+    })
+}
+
 # Applies the active palette to a control and all its children. $Old is the palette being replaced.
 function Set-ControlTheme($Control, $Old = $script:Theme) {
     $t = $script:Theme
@@ -176,7 +198,11 @@ function Set-ControlTheme($Control, $Old = $script:Theme) {
             $Control.ForeColor = $t.Dim
             $Control.FlatAppearance.MouseOverBackColor = $t.Hover
             $Control.FlatAppearance.MouseDownBackColor = $t.Hover
-        } elseif ($role -eq 'Primary' -and $Control.Enabled) {
+        } elseif (-not $Control.Enabled) {
+            $Control.BackColor = $t.Back
+            $Control.ForeColor = $t.Dim
+            $Control.FlatAppearance.BorderColor = $t.Line
+        } elseif ($role -eq 'Primary') {
             $Control.BackColor = $t.Accent
             $Control.ForeColor = $t.AccentText
             $Control.FlatAppearance.BorderColor = $t.Accent
@@ -199,7 +225,10 @@ function Set-ControlTheme($Control, $Old = $script:Theme) {
               $Control -is [System.Windows.Forms.ListView] -or $Control -is [System.Windows.Forms.ComboBox]) {
         $Control.BackColor = $t.Input
         $Control.ForeColor = $t.Text
-        if ($Control -is [System.Windows.Forms.ComboBox]) { $Control.FlatStyle = 'Flat' }
+        if ($Control -is [System.Windows.Forms.ComboBox]) {
+            $Control.FlatStyle = 'Flat'
+            Initialize-ComboTheme $Control
+        }
         else {
             $Control.BorderStyle = 'FixedSingle'
             Set-NativeTheme $Control $dark

@@ -15,13 +15,13 @@ function New-ListView($Parent, [int]$Height, [object[]]$Columns) {
     return $lv
 }
 
-$grpChecks = New-Section $tabSummary 'Checks' 14 272
-$statusView = New-ListView $grpChecks 246 @(@('Check', 170), @('Result', 340), @('Status', 90))
+$grpChecks = New-Section $tabSummary 'Checks' 14 290
+$statusView = New-ListView $grpChecks 264 @(@('Check', 170), @('Result', 340), @('Status', 90))
 [void]$script:StatusListViews.Add($statusView)
-$grpProtocols = New-Section $tabSummary 'Protocols' 298 96
-$protocolView = New-ListView $grpProtocols 70 @(@('Protocol', 220), @('Version', 120), @('Site ID', 150), @('SSO', 75))
+$grpProtocols = New-Section $tabSummary 'Protocols' 312 90
+$protocolView = New-ListView $grpProtocols 64 @(@('Protocol', 220), @('Version', 120), @('Site ID', 150), @('SSO', 75))
 
-$grpReport = New-Section $tabSummary 'Report' 404 72
+$grpReport = New-Section $tabSummary 'Report' 410 72
 [void](New-Label $grpReport 'Technician initials' 0 29 'Dim')
 $initialsBox = New-Object System.Windows.Forms.TextBox
 $initialsBox.Location = New-Object System.Drawing.Point(120, 26)
@@ -37,9 +37,9 @@ $commentsBox.Location   = New-Object System.Drawing.Point(296, 26)
 $commentsBox.Size       = New-Object System.Drawing.Size(322, 44)
 $grpReport.Controls.Add($commentsBox)
 
-$btnSummaryRefresh = New-Button $tabSummary 'Refresh' 20 482 110
-$btnLogFolder      = New-Button $tabSummary 'Open Log Folder' 138 482 130
-$btnReport         = New-Button $tabSummary 'Save Report' 506 482 -Primary
+$btnSummaryRefresh = New-Button $tabSummary 'Refresh' 20 488 110
+$btnLogFolder      = New-Button $tabSummary 'Open Log Folder' 138 488 130
+$btnReport         = New-Button $tabSummary 'Save Report' 506 488 -Primary
 Set-EnterButton $initialsBox $btnReport
 
 function Update-Summary {

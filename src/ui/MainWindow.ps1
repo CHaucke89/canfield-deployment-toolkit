@@ -34,7 +34,6 @@ $script:Roles = New-Object 'System.Collections.Generic.Dictionary[object,string]
 function Set-Role($Control, [string]$Role) {
     $script:Roles[$Control] = $Role
     if ($Role -like 'Badge*') { $Control.Font = $script:HeaderFont; $Control.Padding = New-Object System.Windows.Forms.Padding(4, 1, 4, 1) }
-    if ($Role -eq 'Primary') { $Control.Add_EnabledChanged({ Set-ControlTheme $this }) }
 }
 function Get-Role($Control) {
     $r = $null
@@ -58,6 +57,8 @@ function New-Button($Parent, [string]$Text, [int]$X, [int]$Y, [int]$Width = 132,
     $b.Location = New-Object System.Drawing.Point($X, $Y)
     $b.Size     = New-Object System.Drawing.Size($Width, 29)
     if ($Primary) { Set-Role $b 'Primary' }
+    # Flat buttons don't look disabled on their own, so the theme restyles them when this changes.
+    $b.Add_EnabledChanged({ Set-ControlTheme $this })
     $Parent.Controls.Add($b)
     return $b
 }
