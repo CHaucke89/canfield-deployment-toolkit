@@ -23,6 +23,15 @@ foreach ($page in @($tabs.TabPages)) {
     Select-Tab $page.Text
     Save-Shot ((($page.Text -replace '\W', '-').ToLower()) + '-dark')
 }
+# What is really on screen (DrawToBitmap ignores the tab Region and native theming); best effort on the runner.
+Select-Tab 'Summary'
+try {
+    $script:shot++
+    $bmp = New-Object System.Drawing.Bitmap($form.Width, $form.Height)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CopyFromScreen($form.Location, [System.Drawing.Point]::Empty, $form.Size)
+    $g.Dispose(); $bmp.Save((Join-Path $OutDir ('{0:D2}-summary-dark-screen.png' -f $script:shot))); $bmp.Dispose()
+} catch { Write-Host "screen capture failed: $($_.Exception.Message)" }
 $chkDark.Checked = $false
 Wait-UI 500
 if ((Get-ThemeSetting) -ne 'Light') { throw "Expected saved theme Light, got '$(Get-ThemeSetting)'" }

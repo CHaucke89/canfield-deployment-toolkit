@@ -12,6 +12,7 @@ $script:Themes = @{
         Border = [System.Drawing.SystemColors]::ControlDark; Tab = [System.Drawing.SystemColors]::Control
         Good = [System.Drawing.Color]::ForestGreen; Bad = [System.Drawing.Color]::Firebrick
         Warn = [System.Drawing.Color]::DarkGoldenrod; Link = [System.Drawing.Color]::Blue
+        Accent = [System.Drawing.SystemColors]::Highlight; Dim = [System.Drawing.SystemColors]::GrayText
     }
     Dark = @{
         Name = 'Dark'; Dark = $true
@@ -20,6 +21,7 @@ $script:Themes = @{
         Border = [System.Drawing.Color]::FromArgb(95, 95, 95); Tab = [System.Drawing.Color]::FromArgb(50, 50, 50)
         Good = [System.Drawing.Color]::FromArgb(110, 205, 110); Bad = [System.Drawing.Color]::FromArgb(245, 120, 110)
         Warn = [System.Drawing.Color]::FromArgb(235, 195, 85); Link = [System.Drawing.Color]::FromArgb(120, 180, 255)
+        Accent = [System.Drawing.Color]::FromArgb(76, 160, 255); Dim = [System.Drawing.Color]::FromArgb(170, 170, 170)
     }
 }
 
@@ -95,6 +97,8 @@ function Initialize-ListViewTheme($ListView) {
         [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $e.Header.Text, $sender.Font, $text, $t.Text, $flags)
         $back.Dispose(); $line.Dispose()
     })
+    $last = $ListView.Columns[$ListView.Columns.Count - 1]
+    $last.Tag = $last.Width
     $ListView.Add_DrawItem({ param($sender, $e) $e.DrawDefault = $true })
     $ListView.Add_DrawSubItem({ param($sender, $e) $e.DrawDefault = $true })
 }
@@ -130,16 +134,23 @@ function Set-ControlTheme($Control, $Old = $script:Theme) {
         if ($Control -is [System.Windows.Forms.ListView]) {
             Initialize-ListViewTheme $Control
             $Control.OwnerDraw = $dark
+            # The header past the last column can't be owner-drawn, so the last column fills it while dark (-2).
+            $last = $Control.Columns[$Control.Columns.Count - 1]
+            $last.Width = if ($dark) { -2 } else { [int]$last.Tag }
             foreach ($item in $Control.Items) {
                 $c = Convert-AccentColor $item.ForeColor $Old
                 if ($c) { $item.ForeColor = $c } else { $item.ForeColor = $Control.ForeColor }
             }
         }
-        if ($Control -isnot [System.Windows.Forms.ComboBox]) { Set-NativeTheme $Control $dark }
+        if ($Control -isnot [System.Windows.Forms.ComboBox]) {
+            $Control.BorderStyle = if ($dark) { 'FixedSingle' } else { 'Fixed3D' }
+            Set-NativeTheme $Control $dark
+        }
     } elseif ($Control -is [System.Windows.Forms.TabPage]) {
         if ($dark) { $Control.BackColor = $t.Back } else { $Control.ResetBackColor(); $Control.UseVisualStyleBackColor = $true }
     } elseif ($Control -is [System.Windows.Forms.TabControl]) {
         $Control.DrawMode = if ($dark) { 'OwnerDrawFixed' } else { 'Normal' }
+        Update-TabRegion $Control
     } elseif ($Control -is [System.Windows.Forms.Form]) {
         if ($dark) { $Control.BackColor = $t.Back } else { $Control.ResetBackColor() }
         Set-NativeTheme $Control $dark $true
@@ -176,18 +187,36 @@ function Set-Theme([string]$Name, [bool]$Save = $true) {
     }
 }
 
-# Tab headers in dark mode (the TabControl is owner-drawn only while dark).
+# Windows paints the tab strip and page border light whatever the colors. While dark, the TabControl's Region is cut
+# down to the tab headers and the page area, so the form's dark background shows everywhere else.
+function Update-TabRegion($TabControl) {
+    if (-not $script:Theme.Dark) { $TabControl.Region = $null; return }
+    $region = New-Object System.Drawing.Region($TabControl.DisplayRectangle)
+    for ($i = 0; $i -lt $TabControl.TabCount; $i++) {
+        $r = $TabControl.GetTabRect($i)
+        $r.Inflate(-1, -1)
+        $region.Union($r)
+    }
+    $TabControl.Region = $region
+}
+
+# Tab headers while dark (the TabControl is owner-drawn only then): the selected tab is lighter with an accent bar.
 $tabs.Add_DrawItem({
     param($sender, $e)
     $t = $script:Theme
-    $page = $sender.TabPages[$e.Index]
     $selected = ($e.Index -eq $sender.SelectedIndex)
-    $color = if ($selected) { $t.Back } else { $t.Tab }
-    $brush = New-Object System.Drawing.SolidBrush($color)
+    $back = if ($selected) { $t.Button } else { $t.Surface }
+    $brush = New-Object System.Drawing.SolidBrush($back)
     $e.Graphics.FillRectangle($brush, $e.Bounds)
     $brush.Dispose()
+    if ($selected) {
+        $bar = New-Object System.Drawing.SolidBrush($t.Accent)
+        $e.Graphics.FillRectangle($bar, $e.Bounds.X, ($e.Bounds.Bottom - 3), $e.Bounds.Width, 3)
+        $bar.Dispose()
+    }
+    $fore = if ($selected) { $t.Text } else { $t.Dim }
     $flags = [System.Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, NoPrefix'
-    [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $page.Text, $sender.Font, $e.Bounds, $t.Text, $flags)
+    [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.TabPages[$e.Index].Text, $sender.Font, $e.Bounds, $fore, $flags)
 })
 
 # --- Toggle (bottom left of the main window, next to Close) ---
