@@ -4,32 +4,25 @@ $tabComputer = New-Object System.Windows.Forms.TabPage; $tabComputer.Text = 'Com
 [void]$tabs.TabPages.Add($tabComputer)
 
 # --- Computer name ---
-$grpName = New-Group $tabComputer 'Computer name' 8 95
+$grpName = New-Section $tabComputer 'Computer name' 14 98
 
-$nameCurrent = New-Object System.Windows.Forms.Label
-$nameCurrent.Text     = "Current computer name: $env:COMPUTERNAME"
-$nameCurrent.Location = New-Object System.Drawing.Point(12, 22)
-$nameCurrent.Size     = New-Object System.Drawing.Size(566, 18)
-$grpName.Controls.Add($nameCurrent)
+[void](New-Label $grpName 'Current' 0 27 'Dim')
+$nameCurrent = New-Label $grpName $env:COMPUTERNAME 110 26
+Set-Mono $nameCurrent
+$nameRestart = New-Label $grpName 'RESTART PENDING' 0 28 'BadgeWarn'
+$nameRestart.Visible = $false
 
 $nameBox = New-Object System.Windows.Forms.TextBox
 $nameBox.MaxLength = 15
-$nameBox.Location  = New-Object System.Drawing.Point(12, 46)
-$nameBox.Size      = New-Object System.Drawing.Size(440, 22)
+$nameBox.Location  = New-Object System.Drawing.Point(0, 50)
+$nameBox.Size      = New-Object System.Drawing.Size(476, 23)
+Set-Mono $nameBox
 $grpName.Controls.Add($nameBox)
 
-$btnName = New-Object System.Windows.Forms.Button
-$btnName.Text     = 'Rename Computer'
-$btnName.Location = New-Object System.Drawing.Point(460, 43)
-$btnName.Size     = New-Object System.Drawing.Size(118, 28)
-$btnName.Enabled  = $false
-$grpName.Controls.Add($btnName)
+$btnName = New-Button $grpName 'Rename Computer' 486 48 -Primary
+$btnName.Enabled = $false
 
-$nameHint = New-Object System.Windows.Forms.Label
-$nameHint.Text     = 'Max 15 letters, digits or hyphens.'
-$nameHint.Location = New-Object System.Drawing.Point(12, 72)
-$nameHint.AutoSize = $true
-$grpName.Controls.Add($nameHint)
+[void](New-Label $grpName 'Max 15 letters, digits or hyphens.' 0 77 'Dim')
 
 Set-EnterButton $nameBox $btnName
 $nameBox.Add_TextChanged({
@@ -51,7 +44,10 @@ $btnName.Add_Click({
         return
     }
 
-    $nameCurrent.Text = "Current computer name: $env:COMPUTERNAME (will be '$newName' after restart)"
+    $nameCurrent.Text = "$env:COMPUTERNAME -> $newName"
+    $nameRestart.Left = $nameCurrent.Left + $nameCurrent.PreferredWidth + 8
+    $nameRestart.Visible = $true
+    $hdrComputer.Text = $nameCurrent.Text
     $nameBox.Clear()
     $restart = [System.Windows.Forms.MessageBox]::Show($form,
         "Computer renamed to '$newName'.`nRestart now to finish?",
@@ -64,37 +60,29 @@ $btnName.Add_Click({
 })
 
 # --- Site Photographer password ---
-$grpPhoto = New-Group $tabComputer "Site Photographer password" 110 95
+$grpPhoto = New-Section $tabComputer 'Site Photographer password' 124 98
 
 function Update-PhotoLabel {
     $current = Get-PhotographerPassword
     if (-not $current) { $current = '<not set>' }
-    $photoLabel.Text = "New password for the 'Site Photographer' account (current password: $current):"
+    $photoLabel.Text = $current
 }
 
-$photoLabel = New-Object System.Windows.Forms.Label
+[void](New-Label $grpPhoto 'Current password' 0 27 'Dim')
+$photoLabel = New-Label $grpPhoto '' 110 26
+Set-Mono $photoLabel
 Update-PhotoLabel
-$photoLabel.Location = New-Object System.Drawing.Point(12, 22)
-$photoLabel.AutoSize = $true
-$grpPhoto.Controls.Add($photoLabel)
 
 $photoBox = New-Object System.Windows.Forms.TextBox
-$photoBox.Location = New-Object System.Drawing.Point(12, 46)
-$photoBox.Size     = New-Object System.Drawing.Size(440, 22)
+$photoBox.Location = New-Object System.Drawing.Point(0, 50)
+$photoBox.Size     = New-Object System.Drawing.Size(476, 23)
+Set-Mono $photoBox
 $grpPhoto.Controls.Add($photoBox)
 
-$btnPhoto = New-Object System.Windows.Forms.Button
-$btnPhoto.Text     = 'Set Password'
-$btnPhoto.Location = New-Object System.Drawing.Point(460, 43)
-$btnPhoto.Size     = New-Object System.Drawing.Size(118, 28)
-$btnPhoto.Enabled  = $false
-$grpPhoto.Controls.Add($btnPhoto)
+$btnPhoto = New-Button $grpPhoto 'Set Password' 486 48 -Primary
+$btnPhoto.Enabled = $false
 
-$photoNote = New-Object System.Windows.Forms.Label
-$photoNote.Text     = 'Symbols, spaces and numbers are removed and the password is converted to lower case.'
-$photoNote.Location = New-Object System.Drawing.Point(12, 72)
-$photoNote.AutoSize = $true
-$grpPhoto.Controls.Add($photoNote)
+[void](New-Label $grpPhoto 'Symbols, spaces and numbers are removed and the password is converted to lower case.' 0 77 'Dim')
 
 Set-EnterButton $photoBox $btnPhoto
 $photoBox.Add_TextChanged({ $btnPhoto.Enabled = ($photoBox.Text.Trim().Length -gt 0) })
@@ -120,32 +108,22 @@ $btnPhoto.Add_Click({
 })
 
 # --- Date, time and time zone ---
-$grpTime = New-Group $tabComputer 'Date, time and time zone' 212 75
+$grpTime = New-Section $tabComputer 'Date, time and time zone' 234 78
 
-$tzLabel = New-Object System.Windows.Forms.Label
-$tzLabel.Text     = 'Time zone:'
-$tzLabel.Location = New-Object System.Drawing.Point(12, 24)
-$tzLabel.AutoSize = $true
-$grpTime.Controls.Add($tzLabel)
-
+[void](New-Label $grpTime 'Time zone' 0 29 'Dim')
 $tzCombo = New-Object System.Windows.Forms.ComboBox
 $tzCombo.DropDownStyle = 'DropDownList'
 $tzCombo.DisplayMember = 'DisplayName'
-$tzCombo.Location      = New-Object System.Drawing.Point(85, 20)
-$tzCombo.Size          = New-Object System.Drawing.Size(367, 24)
+$tzCombo.Location      = New-Object System.Drawing.Point(110, 26)
+$tzCombo.Size          = New-Object System.Drawing.Size(366, 24)
 foreach ($tz in @(Get-TimeZone -ListAvailable)) { [void]$tzCombo.Items.Add($tz) }
 $grpTime.Controls.Add($tzCombo)
 
-$timeInfo = New-Object System.Windows.Forms.Label
-$timeInfo.Location = New-Object System.Drawing.Point(12, 50)
-$timeInfo.Size     = New-Object System.Drawing.Size(440, 18)
-$grpTime.Controls.Add($timeInfo)
+$btnSyncTime = New-Button $grpTime 'Sync Time' 486 24
 
-$btnSyncTime = New-Object System.Windows.Forms.Button
-$btnSyncTime.Text     = 'Sync Time'
-$btnSyncTime.Location = New-Object System.Drawing.Point(460, 18)
-$btnSyncTime.Size     = New-Object System.Drawing.Size(118, 28)
-$grpTime.Controls.Add($btnSyncTime)
+[void](New-Label $grpTime 'Date and time' 0 57 'Dim')
+$timeInfo = New-Label $grpTime '' 110 56
+Set-Mono $timeInfo
 
 # Shows the current time zone in the dropdown without triggering a change.
 $script:tzLoading = $false
@@ -157,7 +135,7 @@ function Update-TimeInfo {
         if ($tzCombo.Items[$i].Id -eq $current) { $tzCombo.SelectedIndex = $i; break }
     }
     $script:tzLoading = $false
-    $timeInfo.Text = "Date and time: $(Get-Date -Format 'dd MMM yyyy HH:mm')"
+    $timeInfo.Text = Get-Date -Format 'dd MMM yyyy HH:mm'
 }
 Update-TimeInfo
 
@@ -192,34 +170,27 @@ $btnSyncTime.Add_Click({
 })
 
 # --- Windows Update ---
-$grpUpdate = New-Group $tabComputer 'Windows Update' 294 124
+$grpUpdate = New-Section $tabComputer 'Windows Update' 324 172
 
 $updateInfo = New-Object System.Windows.Forms.Label
 $updateInfo.Text     = 'Click Check for Updates to see if this computer needs updates.'
-$updateInfo.Location = New-Object System.Drawing.Point(12, 24)
-$updateInfo.Size     = New-Object System.Drawing.Size(440, 18)
+$updateInfo.Location = New-Object System.Drawing.Point(0, 28)
+$updateInfo.Size     = New-Object System.Drawing.Size(476, 18)
+$updateInfo.AutoEllipsis = $true
 $grpUpdate.Controls.Add($updateInfo)
 
 $updateList = New-Object System.Windows.Forms.ListBox
-$updateList.Location         = New-Object System.Drawing.Point(12, 46)
-$updateList.Size             = New-Object System.Drawing.Size(440, 68)
+$updateList.Location         = New-Object System.Drawing.Point(0, 52)
+$updateList.Size             = New-Object System.Drawing.Size(476, 118)
 $updateList.IntegralHeight   = $false
 $updateList.HorizontalScrollbar = $true
 $updateList.SelectionMode    = 'None'
+Set-Mono $updateList
 $grpUpdate.Controls.Add($updateList)
 
-$btnUpdate = New-Object System.Windows.Forms.Button
-$btnUpdate.Text     = 'Check for Updates'
-$btnUpdate.Location = New-Object System.Drawing.Point(460, 18)
-$btnUpdate.Size     = New-Object System.Drawing.Size(118, 28)
-$grpUpdate.Controls.Add($btnUpdate)
-
-$btnInstallUpdates = New-Object System.Windows.Forms.Button
-$btnInstallUpdates.Text     = 'Install'
-$btnInstallUpdates.Location = New-Object System.Drawing.Point(460, 52)
-$btnInstallUpdates.Size     = New-Object System.Drawing.Size(118, 28)
-$btnInstallUpdates.Enabled  = $false
-$grpUpdate.Controls.Add($btnInstallUpdates)
+$btnUpdate = New-Button $grpUpdate 'Check for Updates' 486 50
+$btnInstallUpdates = New-Button $grpUpdate 'Install' 486 86 -Primary
+$btnInstallUpdates.Enabled = $false
 
 # Runs in a background runspace so the window stays responsive; searching and installing can take a long time.
 # Install searches again because the COM update objects can't be handed between runspaces.
@@ -262,8 +233,9 @@ $updateWorker = {
     }
 }
 
+# Status colors get a dot in front; plain text (the theme's Text color) doesn't.
 function Set-UpdateInfo([string]$Text, $Color, [string[]]$Lines) {
-    $updateInfo.Text      = $Text
+    $updateInfo.Text      = if ($Color -eq $script:Theme.Text) { $Text } else { "$script:Dot  $Text" }
     $updateInfo.ForeColor = $Color
     $updateList.Items.Clear()
     foreach ($l in $Lines) { if ($l) { [void]$updateList.Items.Add($l) } }

@@ -4,43 +4,36 @@ $tabRemote = New-Object System.Windows.Forms.TabPage; $tabRemote.Text = 'Remote 
 [void]$tabs.TabPages.Add($tabRemote)
 
 # --- LogMeIn ---
-$grpLmi = New-Group $tabRemote 'LogMeIn' 8 115
+$grpLmi = New-Section $tabRemote 'LogMeIn' 14 124
 
 $sponsors = @(Get-Sponsors $CsvPath $EmbeddedCsv)
 
 $lmiStatus = New-Object System.Windows.Forms.Label
-$lmiStatus.Location = New-Object System.Drawing.Point(12, 22)
+$lmiStatus.Location = New-Object System.Drawing.Point(0, 27)
 $lmiStatus.AutoSize = $true
 $grpLmi.Controls.Add($lmiStatus)
 
-$lmiLabel = New-Object System.Windows.Forms.Label
-$lmiLabel.Text     = 'Select the sponsor to install LogMeIn for:'
-$lmiLabel.Location = New-Object System.Drawing.Point(12, 44)
-$lmiLabel.AutoSize = $true
-$grpLmi.Controls.Add($lmiLabel)
+$lmiLabel = New-Label $grpLmi 'Select the sponsor to install LogMeIn for:' 0 51 'Dim'
 
 $combo = New-Object System.Windows.Forms.ComboBox
 $combo.DropDownStyle = 'DropDownList'
-$combo.Location      = New-Object System.Drawing.Point(12, 64)
-$combo.Size          = New-Object System.Drawing.Size(440, 24)
+$combo.Location      = New-Object System.Drawing.Point(0, 73)
+$combo.Size          = New-Object System.Drawing.Size(476, 24)
 $combo.DisplayMember = 'Sponsor'
 foreach ($s in $sponsors) { [void]$combo.Items.Add($s) }
 $grpLmi.Controls.Add($combo)
 
-$btnLmi = New-Object System.Windows.Forms.Button
-$btnLmi.Text     = 'Install LogMeIn'
-$btnLmi.Location = New-Object System.Drawing.Point(460, 62)
-$btnLmi.Size     = New-Object System.Drawing.Size(118, 28)
-$btnLmi.Enabled  = $false
-$grpLmi.Controls.Add($btnLmi)
+$btnLmi = New-Button $grpLmi 'Install LogMeIn' 486 71 -Primary
+$btnLmi.Enabled = $false
 
 if ($sponsors.Count -eq 0) {
     $combo.Enabled = $false
     $lmiNote = New-Object System.Windows.Forms.Label
     $lmiNote.Text      = "No sponsors available. CSV not found or empty: $CsvPath"
     $lmiNote.ForeColor = $script:Theme.Bad
-    $lmiNote.Location  = New-Object System.Drawing.Point(12, 92)
-    $lmiNote.Size      = New-Object System.Drawing.Size(566, 18)
+    $lmiNote.Location  = New-Object System.Drawing.Point(0, 102)
+    $lmiNote.Size      = New-Object System.Drawing.Size($script:PageWidth, 18)
+    $lmiNote.AutoEllipsis = $true
     $grpLmi.Controls.Add($lmiNote)
 }
 
@@ -85,18 +78,15 @@ $btnLmi.Add_Click({
 })
 
 # --- Resolve MDM ---
-$grpMdm = New-Group $tabRemote 'Resolve MDM' 130 65
+$grpMdm = New-Section $tabRemote 'Resolve MDM' 148 62
 
 $mdmStatus = New-Object System.Windows.Forms.Label
-$mdmStatus.Location = New-Object System.Drawing.Point(12, 28)
-$mdmStatus.Size     = New-Object System.Drawing.Size(440, 18)
+$mdmStatus.Location = New-Object System.Drawing.Point(0, 33)
+$mdmStatus.Size     = New-Object System.Drawing.Size(476, 18)
+$mdmStatus.AutoEllipsis = $true
 $grpMdm.Controls.Add($mdmStatus)
 
-$btnMdm = New-Object System.Windows.Forms.Button
-$btnMdm.Text     = 'Enroll'
-$btnMdm.Location = New-Object System.Drawing.Point(460, 22)
-$btnMdm.Size     = New-Object System.Drawing.Size(118, 28)
-$grpMdm.Controls.Add($btnMdm)
+$btnMdm = New-Button $grpMdm 'Enroll' 486 27 -Primary
 
 $btnMdm.Add_Click({
     $ppkg = Find-ScriptsFile $script:MdmPackage
@@ -126,18 +116,14 @@ function Update-RemoteTab {
 }
 
 # --- BitLocker ---
-$grpBitLocker = New-Group $tabRemote 'BitLocker Encryption Status' 202 52
+$grpBitLocker = New-Section $tabRemote 'BitLocker encryption status' 224 62
 
 $bitLockerInfo = New-Object System.Windows.Forms.Label
-$bitLockerInfo.Location = New-Object System.Drawing.Point(12, 24)
-$bitLockerInfo.Size     = New-Object System.Drawing.Size(440, 18)
+$bitLockerInfo.Location = New-Object System.Drawing.Point(0, 33)
+$bitLockerInfo.Size     = New-Object System.Drawing.Size(476, 18)
 $grpBitLocker.Controls.Add($bitLockerInfo)
 
-$btnBitLocker = New-Object System.Windows.Forms.Button
-$btnBitLocker.Text     = 'Refresh'
-$btnBitLocker.Location = New-Object System.Drawing.Point(460, 17)
-$btnBitLocker.Size     = New-Object System.Drawing.Size(118, 28)
-$grpBitLocker.Controls.Add($btnBitLocker)
+$btnBitLocker = New-Button $grpBitLocker 'Refresh' 486 27
 
 # While the drive is encrypting or decrypting, the percentage refreshes every 10 seconds on this tab.
 $bitLockerTimer = New-Object System.Windows.Forms.Timer
@@ -145,7 +131,7 @@ $bitLockerTimer.Interval = 10000
 
 function Update-BitLockerInfo {
     $status = Get-BitLockerSummary
-    $bitLockerInfo.Text = "Drive ${env:SystemDrive} $status"
+    $bitLockerInfo.Text = "$script:Dot  Drive ${env:SystemDrive} $status"
     $bitLockerInfo.ForeColor = if ($status -eq 'Encrypted') { $script:Theme.Good }
         elseif ($status -match '^(Encrypting|Decrypting)') { $script:Theme.Warn }
         else { $script:Theme.Bad }

@@ -3,62 +3,43 @@
 $tabSummary = New-Object System.Windows.Forms.TabPage; $tabSummary.Text = 'Summary'
 [void]$tabs.TabPages.Add($tabSummary)
 
-function New-ListView([int]$Y, [int]$Height, [object[]]$Columns) {
+function New-ListView($Parent, [int]$Height, [object[]]$Columns) {
     $lv = New-Object System.Windows.Forms.ListView
     $lv.View          = 'Details'
     $lv.FullRowSelect = $true
     $lv.HeaderStyle   = 'Nonclickable'
-    $lv.Location      = New-Object System.Drawing.Point(10, $Y)
-    $lv.Size          = New-Object System.Drawing.Size(590, $Height)
+    $lv.Location      = New-Object System.Drawing.Point(0, 26)
+    $lv.Size          = New-Object System.Drawing.Size($script:PageWidth, $Height)
     foreach ($c in $Columns) { [void]$lv.Columns.Add($c[0], $c[1]) }
-    $tabSummary.Controls.Add($lv)
+    $Parent.Controls.Add($lv)
     return $lv
 }
 
-$statusView   = New-ListView 8 220 @(@('Check', 150), @('Result', 415))
-$protocolView = New-ListView 234 70 @(@('Protocol', 220), @('Version', 120), @('Site ID', 150), @('SSO', 75))
+$grpChecks = New-Section $tabSummary 'Checks' 14 272
+$statusView = New-ListView $grpChecks 246 @(@('Check', 170), @('Result', 340), @('Status', 90))
+[void]$script:StatusListViews.Add($statusView)
+$grpProtocols = New-Section $tabSummary 'Protocols' 298 96
+$protocolView = New-ListView $grpProtocols 70 @(@('Protocol', 220), @('Version', 120), @('Site ID', 150), @('SSO', 75))
 
-$initialsLabel = New-Object System.Windows.Forms.Label
-$initialsLabel.Text     = 'Technician initials:'
-$initialsLabel.Location = New-Object System.Drawing.Point(10, 315)
-$initialsLabel.AutoSize = $true
-$tabSummary.Controls.Add($initialsLabel)
-
+$grpReport = New-Section $tabSummary 'Report' 404 72
+[void](New-Label $grpReport 'Technician initials' 0 29 'Dim')
 $initialsBox = New-Object System.Windows.Forms.TextBox
-$initialsBox.Location = New-Object System.Drawing.Point(125, 312)
-$initialsBox.Size     = New-Object System.Drawing.Size(80, 22)
-$tabSummary.Controls.Add($initialsBox)
+$initialsBox.Location = New-Object System.Drawing.Point(120, 26)
+$initialsBox.Size     = New-Object System.Drawing.Size(80, 23)
+Set-Mono $initialsBox
+$grpReport.Controls.Add($initialsBox)
 
-$commentsLabel = New-Object System.Windows.Forms.Label
-$commentsLabel.Text     = 'Comments:'
-$commentsLabel.Location = New-Object System.Drawing.Point(10, 343)
-$commentsLabel.AutoSize = $true
-$tabSummary.Controls.Add($commentsLabel)
-
+[void](New-Label $grpReport 'Comments' 226 29 'Dim')
 $commentsBox = New-Object System.Windows.Forms.TextBox
 $commentsBox.Multiline  = $true
 $commentsBox.ScrollBars = 'Vertical'
-$commentsBox.Location   = New-Object System.Drawing.Point(125, 340)
-$commentsBox.Size       = New-Object System.Drawing.Size(475, 40)
-$tabSummary.Controls.Add($commentsBox)
+$commentsBox.Location   = New-Object System.Drawing.Point(296, 26)
+$commentsBox.Size       = New-Object System.Drawing.Size(322, 44)
+$grpReport.Controls.Add($commentsBox)
 
-$btnSummaryRefresh = New-Object System.Windows.Forms.Button
-$btnSummaryRefresh.Text     = 'Refresh'
-$btnSummaryRefresh.Location = New-Object System.Drawing.Point(10, 388)
-$btnSummaryRefresh.Size     = New-Object System.Drawing.Size(90, 28)
-$tabSummary.Controls.Add($btnSummaryRefresh)
-
-$btnLogFolder = New-Object System.Windows.Forms.Button
-$btnLogFolder.Text     = 'Open Log Folder'
-$btnLogFolder.Location = New-Object System.Drawing.Point(110, 388)
-$btnLogFolder.Size     = New-Object System.Drawing.Size(120, 28)
-$tabSummary.Controls.Add($btnLogFolder)
-
-$btnReport = New-Object System.Windows.Forms.Button
-$btnReport.Text     = 'Save Report'
-$btnReport.Location = New-Object System.Drawing.Point(480, 388)
-$btnReport.Size     = New-Object System.Drawing.Size(120, 28)
-$tabSummary.Controls.Add($btnReport)
+$btnSummaryRefresh = New-Button $tabSummary 'Refresh' 20 482 110
+$btnLogFolder      = New-Button $tabSummary 'Open Log Folder' 138 482 130
+$btnReport         = New-Button $tabSummary 'Save Report' 506 482 -Primary
 Set-EnterButton $initialsBox $btnReport
 
 function Update-Summary {
@@ -80,10 +61,21 @@ function Update-Summary {
             'Canfield Capture' = if ($installs.Count) { ($installs | ForEach-Object { $_.Display }) -join ', ' } else { 'Not installed' }
             'Site users'       = '{0} in the SSCT group' -f $users.Count
         }
+        $bitLocker = $rows['BitLocker']
+        $states = @{
+            'Wi-Fi'            = if ($rows['Wi-Fi'] -like 'Connected*') { 'Good' } else { 'Warn' }
+            'BitLocker'        = if ($bitLocker -eq 'Encrypted') { 'Good' } elseif ($bitLocker -match '^(Encrypt|Decrypt)') { 'Warn' } else { 'Bad' }
+            'LogMeIn'          = if ($rows['LogMeIn'] -eq 'Installed') { 'Good' } else { 'Bad' }
+            'Resolve MDM'      = if ($rows['Resolve MDM'] -eq 'Enrolled') { 'Good' } else { 'Bad' }
+            'Canfield Capture' = if ($installs.Count) { 'Good' } else { 'Bad' }
+            'Site users'       = if ($users.Count) { 'Good' } else { 'Warn' }
+        }
         $statusView.Items.Clear()
         foreach ($k in $rows.Keys) {
             $item = New-Object System.Windows.Forms.ListViewItem($k)
             [void]$item.SubItems.Add([string]$rows[$k])
+            [void]$item.SubItems.Add([string]$script:BadgeText[[string]$states[$k]])
+            $item.Tag = $states[$k]
             [void]$statusView.Items.Add($item)
         }
 

@@ -3,87 +3,62 @@
 $tabUsb = New-Object System.Windows.Forms.TabPage; $tabUsb.Text = 'Canfield Capture'
 [void]$tabs.TabPages.Add($tabUsb)
 
-$btnScan = New-Object System.Windows.Forms.Button
-$btnScan.Text     = 'Scan USB'
-$btnScan.Location = New-Object System.Drawing.Point(15, 12)
-$btnScan.Size     = New-Object System.Drawing.Size(90, 26)
-$tabUsb.Controls.Add($btnScan)
+$grpInstallers = New-Section $tabUsb 'Installers' 14 382
 
-$btnBrowse = New-Object System.Windows.Forms.Button
-$btnBrowse.Text     = 'Browse...'
-$btnBrowse.Location = New-Object System.Drawing.Point(110, 12)
-$btnBrowse.Size     = New-Object System.Drawing.Size(90, 26)
-$tabUsb.Controls.Add($btnBrowse)
+$btnScan   = New-Button $grpInstallers 'Scan USB' 0 24 110
+$btnBrowse = New-Button $grpInstallers 'Browse...' 118 24 110
 
 $usbInfo = New-Object System.Windows.Forms.Label
 $usbInfo.Text     = 'Click Scan USB to look for setup.exe, or Browse... to pick it.'
-$usbInfo.Location = New-Object System.Drawing.Point(210, 18)
-$usbInfo.Size     = New-Object System.Drawing.Size(385, 18)
+$usbInfo.Location = New-Object System.Drawing.Point(240, 30)
+$usbInfo.Size     = New-Object System.Drawing.Size(378, 18)
 $usbInfo.AutoEllipsis = $true
-$tabUsb.Controls.Add($usbInfo)
+$grpInstallers.Controls.Add($usbInfo)
 
 $list = New-Object System.Windows.Forms.ListBox
-$list.Location      = New-Object System.Drawing.Point(15, 48)
-$list.Size          = New-Object System.Drawing.Size(580, 315)
+$list.Location      = New-Object System.Drawing.Point(0, 62)
+$list.Size          = New-Object System.Drawing.Size($script:PageWidth, 278)
+$list.IntegralHeight = $false
 $list.HorizontalScrollbar = $true
 $list.DisplayMember = 'Display'
 $list.DrawMode      = 'OwnerDrawFixed'
-$tabUsb.Controls.Add($list)
+$list.ItemHeight    = 22
+$grpInstallers.Controls.Add($list)
 
 # Legend for the list colors.
-$legendInstalled = New-Object System.Windows.Forms.Label
-$legendInstalled.Text      = 'Green = already installed on this computer'
+$legendInstalled = New-Label $grpInstallers "$script:Dot  Installed on this computer" 0 354
 $legendInstalled.ForeColor = $script:Theme.Good
-$legendInstalled.Location  = New-Object System.Drawing.Point(15, 366)
-$legendInstalled.AutoSize  = $true
-$tabUsb.Controls.Add($legendInstalled)
+[void](New-Label $grpInstallers "$script:Dot  Not installed" 200 354 'Dim')
 
-$legendNew = New-Object System.Windows.Forms.Label
-$legendNew.Text     = 'Black = not installed'
-$legendNew.Location = New-Object System.Drawing.Point(300, 366)
-$legendNew.AutoSize = $true
-$tabUsb.Controls.Add($legendNew)
-Add-ThemeHook { $legendNew.Text = if ($script:Theme.Dark) { 'White = not installed' } else { 'Black = not installed' } }
+$btnUsb = New-Button $grpInstallers 'Install Selected' 486 348 -Primary
+$btnUsb.Enabled = $false
 
 # Response code generator (replaces ResponseCodeGenerator.exe).
-$lblRequest = New-Object System.Windows.Forms.Label
-$lblRequest.Text     = 'Request code:'
-$lblRequest.Location = New-Object System.Drawing.Point(15, 398)
-$lblRequest.AutoSize = $true
-$tabUsb.Controls.Add($lblRequest)
+$grpResponse = New-Section $tabUsb 'Response code' 410 62
 
+[void](New-Label $grpResponse 'Request code' 0 30 'Dim')
 $txtRequest = New-Object System.Windows.Forms.TextBox
-$txtRequest.Location  = New-Object System.Drawing.Point(95, 395)
-$txtRequest.Size      = New-Object System.Drawing.Size(75, 20)
+$txtRequest.Location  = New-Object System.Drawing.Point(90, 27)
+$txtRequest.Size      = New-Object System.Drawing.Size(90, 23)
 $txtRequest.MaxLength = 8
 $txtRequest.CharacterCasing = 'Upper'
-$tabUsb.Controls.Add($txtRequest)
+Set-Mono $txtRequest
+$grpResponse.Controls.Add($txtRequest)
 
-$lblResponse = New-Object System.Windows.Forms.Label
-$lblResponse.Text     = 'Response code:'
-$lblResponse.Location = New-Object System.Drawing.Point(180, 398)
-$lblResponse.AutoSize = $true
-$tabUsb.Controls.Add($lblResponse)
-
+[void](New-Label $grpResponse 'Response code' 200 30 'Dim')
 $txtResponse = New-Object System.Windows.Forms.TextBox
-$txtResponse.Location = New-Object System.Drawing.Point(265, 395)
-$txtResponse.Size     = New-Object System.Drawing.Size(75, 20)
+$txtResponse.Location = New-Object System.Drawing.Point(296, 27)
+$txtResponse.Size     = New-Object System.Drawing.Size(90, 23)
 $txtResponse.ReadOnly = $true
-$tabUsb.Controls.Add($txtResponse)
+Set-Mono $txtResponse
+$grpResponse.Controls.Add($txtResponse)
 
 $lblAutoFill = New-Object System.Windows.Forms.Label
-$lblAutoFill.Location = New-Object System.Drawing.Point(350, 398)
-$lblAutoFill.Size     = New-Object System.Drawing.Size(120, 18)
+$lblAutoFill.Location = New-Object System.Drawing.Point(406, 30)
+$lblAutoFill.Size     = New-Object System.Drawing.Size(212, 18)
 $lblAutoFill.AutoEllipsis = $true
-$tabUsb.Controls.Add($lblAutoFill)
+$grpResponse.Controls.Add($lblAutoFill)
 $autoFillTip = New-Object System.Windows.Forms.ToolTip
-
-$btnUsb = New-Object System.Windows.Forms.Button
-$btnUsb.Text     = 'Install Selected'
-$btnUsb.Location = New-Object System.Drawing.Point(475, 390)
-$btnUsb.Size     = New-Object System.Drawing.Size(120, 30)
-$btnUsb.Enabled  = $false
-$tabUsb.Controls.Add($btnUsb)
 
 $script:usbScanned = $false
 
@@ -103,23 +78,25 @@ function Update-InstalledMarks {
         $item.Installed = [bool](($sources -contains $leaf) -or ($item.Version -and ($versionOnly -contains $item.Version)))
         $widest = [math]::Max($widest, [System.Windows.Forms.TextRenderer]::MeasureText($item.Display, $list.Font).Width)
     }
-    $list.HorizontalExtent = $widest + 6
+    $list.HorizontalExtent = $widest + 12
     $list.Invalidate()
 }
 
 $list.Add_DrawItem({
     param($sender, $e)
     if ($e.Index -lt 0) { return }
-    $e.DrawBackground()
+    $t = $script:Theme
     $item = $list.Items[$e.Index]
     $selected = ($e.State -band [System.Windows.Forms.DrawItemState]::Selected) -ne 0
-    $color = if ($selected) { [System.Drawing.SystemColors]::HighlightText }
-        elseif ($item.Installed) { $script:Theme.Good }
-        else { $list.ForeColor }
+    $back = New-Object System.Drawing.SolidBrush($(if ($selected) { $t.Accent } else { $t.Input }))
+    $e.Graphics.FillRectangle($back, $e.Bounds)
+    $back.Dispose()
+    $color = if ($selected) { $t.AccentText }
+        elseif ($item.Installed) { $t.Good }
+        else { $t.Text }
     $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, NoPrefix'
-    $bounds = New-Object System.Drawing.Rectangle($e.Bounds.X, $e.Bounds.Y, [math]::Max($e.Bounds.Width, $list.HorizontalExtent), $e.Bounds.Height)
+    $bounds = New-Object System.Drawing.Rectangle(($e.Bounds.X + 6), $e.Bounds.Y, [math]::Max($e.Bounds.Width, $list.HorizontalExtent), $e.Bounds.Height)
     [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $item.Display, $e.Font, $bounds, $color, $flags)
-    $e.DrawFocusRectangle()
 })
 function Invoke-UsbScan {
     $script:usbScanned = $true
@@ -303,7 +280,9 @@ $rcgTimer = New-Object System.Windows.Forms.Timer
 $rcgTimer.Interval = 500
 $rcgTimer.Add_Tick({
     $state = $script:rcgShared.State
-    $lblAutoFill.Text = if ($state -eq 'Listening') { 'Auto-fill ready' } else { $state }
+    $ready = ($state -eq 'Listening')
+    $lblAutoFill.Text = if ($ready) { "$script:Dot  Auto-fill ready" } else { "$script:Dot  $state" }
+    $lblAutoFill.ForeColor = if ($ready) { $script:Theme.Good } else { $script:Theme.Warn }
     $autoFillTip.SetToolTip($lblAutoFill, $state)
     if ($script:rcgShared.Seq -ne $script:rcgSeenSeq) {
         $script:rcgSeenSeq = $script:rcgShared.Seq
