@@ -8,6 +8,8 @@ on:
         default: .claude/skills/run-canfield-deployment-toolkit/steps-default.ps1
   push:
     paths:
+      - Install-Toolkit.ps1
+      - src/**
       - .claude/skills/run-canfield-deployment-toolkit/**
       - .github/workflows/screenshots.yml
 
