@@ -1,0 +1,40 @@
+name: Screenshot toolkit window
+
+on:
+  workflow_dispatch:
+    inputs:
+      steps:
+        description: Steps script for the driver (repo-relative)
+        default: .claude/skills/run-canfield-deployment-toolkit/steps-default.ps1
+  push:
+    paths:
+      - .claude/skills/run-canfield-deployment-toolkit/**
+      - .github/workflows/screenshots.yml
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Smoke test
+        shell: pwsh
+        run: ./.claude/skills/run-canfield-deployment-toolkit/smoke.ps1
+
+      - name: Launch toolkit and take screenshots
+        shell: powershell
+        env:
+          STEPS: ${{ inputs.steps || '.claude/skills/run-canfield-deployment-toolkit/steps-default.ps1' }}
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File .claude\skills\run-canfield-deployment-toolkit\driver.ps1 -Steps $env:STEPS -OutDir screenshots
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: error
