@@ -61,7 +61,7 @@ Another Sponsor,987654321
 Behavior:
 
 - If `sponsors.csv` exists beside the script/EXE, it is used.
-- If missing, the EXE can fall back to an embedded CSV snapshot created at build time. The snapshot is only embedded when `sponsors.csv` exists next to `Build-Toolkit-Exe.ps1` during the build (it is not committed, so CI builds have no embedded list).
+- If missing, the EXE can fall back to an embedded CSV snapshot created at build time. A local build asks for the CSV to embed with a file dialog (console prompt if no dialog can be shown); Cancel or a blank answer builds without one. `sponsors.csv` is git-ignored and CI builds never prompt, so they have no embedded list.
 
 ## Scripts Folder
 
@@ -109,6 +109,13 @@ Option 2:
 build_bypass.cmd
 ```
 
+Skip the prompt by passing the CSV, or build without one:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Build-Toolkit-Exe.ps1 -SponsorsPath C:\path\to\sponsors.csv
+powershell -ExecutionPolicy Bypass -File .\Build-Toolkit-Exe.ps1 -NoPrompt
+```
+
 Optionally stamp a version into the EXE (defaults to `1.0.0.0`; a leading `v` is dropped and missing parts become `0`):
 
 ```powershell
@@ -119,7 +126,7 @@ What the build does:
 
 1. Installs `ps2exe` if it is missing.
 2. Inlines the `src\` files (in `src\LoadOrder.ps1` order) into a temporary copy of `Install-Toolkit.ps1`.
-3. Embeds `sponsors.csv` as a fallback if it is present.
+3. Embeds the chosen sponsor CSV as a fallback (prompted for, or `-SponsorsPath`; skipped with `-NoPrompt`, `-NonInteractive` or when `CI` is set).
 4. Runs PS2EXE with `assets\toolkit.ico` as the icon, a UAC admin manifest, no console window, and the chosen version.
 
 Output:
