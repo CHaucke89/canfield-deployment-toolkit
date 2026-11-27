@@ -1,7 +1,9 @@
-CST.ps1
+*.cmd
+*.exe
 CLAUDE.md
 AGENTS.md
 Scripts/
 Install-Toolkit.driver.ps1
+build/
 screenshots/
 sponsors.csv
