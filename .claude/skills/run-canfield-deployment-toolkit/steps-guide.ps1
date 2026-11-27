@@ -46,7 +46,7 @@ for ($i = 0; $i -lt $tzCombo.Items.Count; $i++) {
 $timeInfo.Text = '27 Nov 2026 09:30'
 Set-UpdateInfo '2 updates available' ($script:Theme.Warn) @(
     'Cumulative Update for Windows (KB0000001)',
-    'Security Intelligence Update for Microsoft Defender Antivirus (KB0000002)')
+    'Update for Microsoft Defender Antivirus (KB0000002)')
 $btnInstallUpdates.Enabled = $true
 Save-ScreenShot 'computer'
 
@@ -112,7 +112,7 @@ foreach ($r in $rows) {
     [void]$statusView.Items.Add($item)
 }
 $protocolView.Items.Clear()
-foreach ($p in @(@('Example Study A', 'CC v6.1.0', '101', 'Yes'), @('Example Study B', 'CC v6.0.2', 'Not set', 'No'))) {
+foreach ($p in @(,@('Example Study', 'CC v6.1.0', '101', 'Yes'))) {
     $item = New-Object System.Windows.Forms.ListViewItem($p[0])
     foreach ($s in $p[1..3]) { [void]$item.SubItems.Add($s) }
     [void]$protocolView.Items.Add($item)
