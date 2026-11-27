@@ -14,20 +14,20 @@ $grpName.Controls.Add($nameCurrent)
 
 $nameBox = New-Object System.Windows.Forms.TextBox
 $nameBox.MaxLength = 15
-$nameBox.Location  = New-Object System.Drawing.Point(12, 52)
+$nameBox.Location  = New-Object System.Drawing.Point(12, 46)
 $nameBox.Size      = New-Object System.Drawing.Size(440, 22)
 $grpName.Controls.Add($nameBox)
 
 $btnName = New-Object System.Windows.Forms.Button
 $btnName.Text     = 'Rename Computer'
-$btnName.Location = New-Object System.Drawing.Point(460, 49)
+$btnName.Location = New-Object System.Drawing.Point(460, 43)
 $btnName.Size     = New-Object System.Drawing.Size(118, 28)
 $btnName.Enabled  = $false
 $grpName.Controls.Add($btnName)
 
 $nameHint = New-Object System.Windows.Forms.Label
 $nameHint.Text     = 'Max 15 letters, digits or hyphens.'
-$nameHint.Location = New-Object System.Drawing.Point(12, 76)
+$nameHint.Location = New-Object System.Drawing.Point(12, 72)
 $nameHint.AutoSize = $true
 $grpName.Controls.Add($nameHint)
 
