@@ -43,8 +43,8 @@ gh run view $id --log | grep -E "shot |dialog|DRIVER|response code" | cut -c1-30
 ```
 
 Then open the PNGs with the Read tool and look at them. `fetch-screenshots.sh` writes
-`01-computer.png` ... `07-scripts.png`, `08-response-code.png` and `dialog-01.png`. The whole run takes
-about 1.5 minutes.
+`01-computer.png` ... `07-scripts.png`, `08-response-code.png` and `dialog-01.png`. From push to PNGs took
+about 45 seconds. `screenshots/` is gitignored.
 
 ### Driving other flows
 
