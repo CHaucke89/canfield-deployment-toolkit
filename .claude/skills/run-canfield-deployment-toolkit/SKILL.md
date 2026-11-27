@@ -61,7 +61,7 @@ from `src\` (`$tabs`, `$nameBox`, `$btnName`, `$txtRequest`, `$txtResponse`, ...
 | `$script:dialogs` | Count of message boxes answered so far |
 
 Boxes are answered **No** (else OK/Cancel); pass `-DialogAnswer Yes` to say Yes. A throw in the steps
-fails the job with `DRIVER ERROR:` in the log. To run your own steps on a branch, add them to
+fails the job with `DRIVER ERROR:` in the log. `steps-guide.ps1` retakes the user guide's Computer and Remote Access shots with placeholder data. To run your own steps on a branch, add them to
 `steps-default.ps1` on that branch. Once `screenshots.yml` is on `master`, `workflow_dispatch` also takes a
 `steps` input (not yet tried, since dispatch only works for workflows on the default branch).
 
