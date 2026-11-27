@@ -10,9 +10,11 @@ function Save-ScreenShot([string]$Name) {
     $form.TopMost = $true
     $form.Activate()
     Wait-UI 600
-    # DWMWA_EXTENDED_FRAME_BOUNDS: the window without its invisible resize border.
+    # DWMWA_EXTENDED_FRAME_BOUNDS: the window without its invisible resize border. The 1px edge is trimmed too,
+    # since on the runner it holds the border on the left/top and desktop pixels on the right/bottom.
     $r = New-Object GuideShot.Dwm+RECT
     [void][GuideShot.Dwm]::DwmGetWindowAttribute($form.Handle, 9, [ref]$r, 16)
+    $r.Left++; $r.Top++; $r.Right--; $r.Bottom--
     $w = $r.Right - $r.Left; $h = $r.Bottom - $r.Top
     $script:shot++
     $path = Join-Path $OutDir ('{0:D2}-{1}.png' -f $script:shot, $Name)
