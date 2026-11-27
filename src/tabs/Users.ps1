@@ -44,7 +44,7 @@ $grpCreate.Controls.Add($btnCreateUser)
 
 $ssoNote = New-Object System.Windows.Forms.Label
 $ssoNote.Text      = 'Only SSO protocols are installed. Their users sign in with SSO, so local users are usually not needed.'
-$ssoNote.ForeColor = [System.Drawing.Color]::Firebrick
+$ssoNote.ForeColor = $script:Theme.Bad
 $ssoNote.Location  = New-Object System.Drawing.Point(12, 332)
 $ssoNote.Size      = New-Object System.Drawing.Size(265, 48)
 $ssoNote.Visible   = $false

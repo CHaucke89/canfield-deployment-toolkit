@@ -46,5 +46,5 @@ function Set-EnterButton($TextBox, $Button) {
 # Green for good, red otherwise.
 function Set-StatusLabel($Label, [string]$Text, [bool]$Good) {
     $Label.Text      = $Text
-    $Label.ForeColor = if ($Good) { [System.Drawing.Color]::ForestGreen } else { [System.Drawing.Color]::Firebrick }
+    $Label.ForeColor = if ($Good) { $script:Theme.Good } else { $script:Theme.Bad }
 }

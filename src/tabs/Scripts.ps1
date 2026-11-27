@@ -33,7 +33,7 @@ $scriptRows = foreach ($i in 0..($script:CanfieldScripts.Count - 1)) {
 
 $scriptsNote = New-Object System.Windows.Forms.Label
 $scriptsNote.Text      = 'Script files not found. Put the Scripts folder next to CDT.exe to install them.'
-$scriptsNote.ForeColor = [System.Drawing.Color]::Firebrick
+$scriptsNote.ForeColor = $script:Theme.Bad
 $scriptsNote.Location  = New-Object System.Drawing.Point(12, 128)
 $scriptsNote.Size      = New-Object System.Drawing.Size(566, 18)
 $grpScripts.Controls.Add($scriptsNote)

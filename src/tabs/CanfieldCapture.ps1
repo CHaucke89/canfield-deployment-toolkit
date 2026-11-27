@@ -33,7 +33,7 @@ $tabUsb.Controls.Add($list)
 # Legend for the list colors.
 $legendInstalled = New-Object System.Windows.Forms.Label
 $legendInstalled.Text      = 'Green = already installed on this computer'
-$legendInstalled.ForeColor = [System.Drawing.Color]::ForestGreen
+$legendInstalled.ForeColor = $script:Theme.Good
 $legendInstalled.Location  = New-Object System.Drawing.Point(15, 366)
 $legendInstalled.AutoSize  = $true
 $tabUsb.Controls.Add($legendInstalled)
@@ -43,6 +43,7 @@ $legendNew.Text     = 'Black = not installed'
 $legendNew.Location = New-Object System.Drawing.Point(300, 366)
 $legendNew.AutoSize = $true
 $tabUsb.Controls.Add($legendNew)
+Add-ThemeHook { $legendNew.Text = if ($script:Theme.Dark) { 'White = not installed' } else { 'Black = not installed' } }
 
 # Response code generator (replaces ResponseCodeGenerator.exe).
 $lblRequest = New-Object System.Windows.Forms.Label
@@ -113,7 +114,7 @@ $list.Add_DrawItem({
     $item = $list.Items[$e.Index]
     $selected = ($e.State -band [System.Windows.Forms.DrawItemState]::Selected) -ne 0
     $color = if ($selected) { [System.Drawing.SystemColors]::HighlightText }
-        elseif ($item.Installed) { [System.Drawing.Color]::ForestGreen }
+        elseif ($item.Installed) { $script:Theme.Good }
         else { $list.ForeColor }
     $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, NoPrefix'
     $bounds = New-Object System.Drawing.Rectangle($e.Bounds.X, $e.Bounds.Y, [math]::Max($e.Bounds.Width, $list.HorizontalExtent), $e.Bounds.Height)

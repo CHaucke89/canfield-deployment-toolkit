@@ -110,6 +110,7 @@ function Read-Text([string]$Prompt, [string]$Default) {
     $dlg.Controls.Add($cancel)
     $dlg.CancelButton = $cancel
 
+    Set-ControlTheme $dlg
     $result = $dlg.ShowDialog($form)
     $text = $box.Text.Trim()
     $dlg.Dispose()

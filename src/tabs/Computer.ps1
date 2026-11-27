@@ -285,13 +285,13 @@ function Start-UpdateWorker([bool]$Install) {
 }
 
 $btnUpdate.Add_Click({
-    Set-UpdateInfo 'Checking for updates...' ([System.Drawing.SystemColors]::ControlText) @()
+    Set-UpdateInfo 'Checking for updates...' ($script:Theme.Text) @()
     Write-Log 'Checking for Windows updates'
     Start-UpdateWorker $false
 })
 
 $btnInstallUpdates.Add_Click({
-    Set-UpdateInfo 'Installing updates...' ([System.Drawing.SystemColors]::ControlText) @($updateList.Items)
+    Set-UpdateInfo 'Installing updates...' ($script:Theme.Text) @($updateList.Items)
     Write-Log 'Installing Windows updates'
     Start-UpdateWorker $true
 })
@@ -310,7 +310,7 @@ $updateTimer.Add_Tick({
 
     if ($shared.Error) {
         $what = if ($shared.Install) { 'install' } else { 'check for' }
-        Set-UpdateInfo "Could not $what updates." ([System.Drawing.Color]::Firebrick) @("Error: $($shared.Error)")
+        Set-UpdateInfo "Could not $what updates." ($script:Theme.Bad) @("Error: $($shared.Error)")
         Write-Log "Windows Update ($($shared.Step.ToLower())) failed: $($shared.Error)" 'ERROR'
         $btnInstallUpdates.Enabled = ($shared.Titles.Count -gt 0)
         return
@@ -323,9 +323,9 @@ $updateTimer.Add_Tick({
         $installed = $shared.Results.Count - $failed.Count
         $text = "$installed of $($shared.Results.Count) updates installed."
         if ($shared.RebootRequired) { $text += ' Restart required.' }
-        $color = if ($failed.Count) { [System.Drawing.Color]::Firebrick }
-            elseif ($shared.RebootRequired) { [System.Drawing.Color]::DarkGoldenrod }
-            else { [System.Drawing.Color]::ForestGreen }
+        $color = if ($failed.Count) { $script:Theme.Bad }
+            elseif ($shared.RebootRequired) { $script:Theme.Warn }
+            else { $script:Theme.Good }
         $lines = @($shared.Results | ForEach-Object { "$(if ($_.Ok) { 'Installed' } else { 'Failed' }): $($_.Title)" }) +
             @($shared.Skipped | ForEach-Object { "Skipped (needs user input): $_" })
         Set-UpdateInfo $text $color $lines
@@ -345,12 +345,12 @@ $updateTimer.Add_Tick({
 
     $count = $shared.Titles.Count
     if ($count -eq 0) {
-        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." ([System.Drawing.Color]::ForestGreen) @()
+        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." ($script:Theme.Good) @()
         Write-Log 'Windows Update: up to date'
         return
     }
     $noun = if ($count -eq 1) { 'update' } else { 'updates' }
-    Set-UpdateInfo "$count $noun available." ([System.Drawing.Color]::DarkGoldenrod) $shared.Titles
+    Set-UpdateInfo "$count $noun available." ($script:Theme.Warn) $shared.Titles
     Write-Log "Windows Update: $count $noun available"
     foreach ($t in $shared.Titles) { Write-Log "  $t" }
     $btnInstallUpdates.Enabled = $true

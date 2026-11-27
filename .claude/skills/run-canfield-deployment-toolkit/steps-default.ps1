@@ -14,3 +14,17 @@ Select-Tab 'Computer'
 Set-Text $nameBox '-bad-'
 Invoke-Click $btnName
 if ($script:dialogs -ne 1) { throw "Expected 1 dialog, saw $script:dialogs" }
+
+# Dark theme: one shot per tab, then back to light. The choice is saved to settings.json each time.
+$chkDark.Checked = $true
+Wait-UI 500
+if ((Get-ThemeSetting) -ne 'Dark') { throw "Expected saved theme Dark, got '$(Get-ThemeSetting)'" }
+foreach ($page in @($tabs.TabPages)) {
+    Select-Tab $page.Text
+    Save-Shot ((($page.Text -replace '\W', '-').ToLower()) + '-dark')
+}
+$chkDark.Checked = $false
+Wait-UI 500
+if ((Get-ThemeSetting) -ne 'Light') { throw "Expected saved theme Light, got '$(Get-ThemeSetting)'" }
+Select-Tab 'Computer'
+Save-Shot 'computer-light-again'
