@@ -17,6 +17,9 @@ Have these ready:
 Double-click `CDT.exe` and click **Yes** if Windows asks for administrator
 rights.
 
+Tick **Dark theme** at the bottom left of the window to switch to dark
+colors. The toolkit remembers the choice the next time it opens.
+
 ## Computer Tab
 
 Basic computer settings.

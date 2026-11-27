@@ -22,7 +22,7 @@ The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe
 - `Install-Toolkit.ps1`: Entry point (startup, elevation, loads `src\`).
 - `src\LoadOrder.ps1`: Ordered list of source files to load (also used by the build).
 - `src\lib\`: UI-free helpers (validation, sponsor CSV, USB discovery, Canfield Capture cleanup, local users, status checks, logging).
-- `src\ui\`: Main window and shared progress/message helpers.
+- `src\ui\`: Main window, shared progress/message helpers and the light/dark theme.
 - `src\tabs\`: One file per tab (Computer, Remote Access, Canfield Capture, Users, Cleanup Tool, Summary, Scripts).
 - `USER-GUIDE.md`: User guide for each tab, with screenshots in `images\`.
 - `Build-Toolkit-Exe.ps1`: Inlines `src\` into the entry script and builds a single `CDT.exe` using PS2EXE.
@@ -211,6 +211,10 @@ Ported from the Cleanup Tool in the Canfield Setup Tool (`CST.ps1`, not included
 - Lists installed protocols with their version, SSO use, and the Site ID last logged by Canfield Capture (`C:\ProgramData\Canfield\DiagLib`). A cleaned version shows "Not set" until its Site ID is set again.
 - **Save Report** (technician initials required) saves a JPG picture of the window plus a `.txt` with the same name, containing every check, the protocols, initials and comments, and a copy of the toolkit log (`.log`, see [Log File](#log-file)).
 - **Open Log Folder** opens the toolkit's log folder (see [Log File](#log-file)).
+
+### Theme
+
+The **Dark theme** check box at the bottom left switches the window between light and dark. The choice is saved to `C:\ProgramData\CanfieldDeploymentToolkit\settings.json` and restored on the next launch. Message boxes and file dialogs keep the Windows look.
 
 ### Log File
 
