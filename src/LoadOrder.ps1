@@ -1,6 +1,6 @@
 # Files loaded by Install-Toolkit.ps1, in order (paths relative to src\).
 # Build-Toolkit-Exe.ps1 reads this same list to inline the files into the single-file exe.
-# Tab order in the window follows the order of the tabs\ entries.
+# Sidebar order follows the order of the tabs\ entries; ui\Shell.ps1 comes after them.
 @(
     'lib\Log.ps1'
     'lib\Validation.ps1'
@@ -19,4 +19,5 @@
     'tabs\CleanupTool.ps1'
     'tabs\Summary.ps1'
     'tabs\Scripts.ps1'
+    'ui\Shell.ps1'
 )

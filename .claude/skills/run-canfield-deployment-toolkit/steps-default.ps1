@@ -23,7 +23,7 @@ foreach ($page in @($tabs.TabPages)) {
     Select-Tab $page.Text
     Save-Shot ((($page.Text -replace '\W', '-').ToLower()) + '-dark')
 }
-# What is really on screen (DrawToBitmap ignores the tab Region and native theming); best effort on the runner.
+# What is really on screen (DrawToBitmap ignores the dark title bar and scroll bars); best effort on the runner.
 Select-Tab 'Summary'
 try {
     $script:shot++

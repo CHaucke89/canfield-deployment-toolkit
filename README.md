@@ -22,7 +22,7 @@ The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe
 - `Install-Toolkit.ps1`: Entry point (startup, elevation, loads `src\`).
 - `src\LoadOrder.ps1`: Ordered list of source files to load (also used by the build).
 - `src\lib\`: UI-free helpers (validation, sponsor CSV, USB discovery, Canfield Capture cleanup, local users, status checks, logging).
-- `src\ui\`: Main window, shared progress/message helpers and the light/dark theme.
+- `src\ui\`: Main window and layout helpers, sidebar/header/status bar (`Shell.ps1`), shared progress/message helpers and the light/dark theme.
 - `src\tabs\`: One file per tab (Computer, Remote Access, Canfield Capture, Users, Cleanup Tool, Summary, Scripts).
 - `USER-GUIDE.md`: User guide for each tab, with screenshots in `images\`.
 - `Build-Toolkit-Exe.ps1`: Inlines `src\` into the entry script and builds a single `CDT.exe` using PS2EXE.
@@ -214,7 +214,7 @@ Ported from the Cleanup Tool in the Canfield Setup Tool (`CST.ps1`, not included
 
 ### Theme
 
-The **Dark theme** check box at the bottom left switches the window between light and dark. The choice is saved to `C:\ProgramData\CanfieldDeploymentToolkit\settings.json` and restored on the next launch. Message boxes and file dialogs keep the Windows look.
+The **Dark theme** check box at the bottom of the sidebar switches the window between light and dark. The choice is saved to `C:\ProgramData\CanfieldDeploymentToolkit\settings.json` and restored on the next launch. Message boxes and file dialogs keep the Windows look.
 
 ### Log File
 

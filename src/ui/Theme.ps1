@@ -1,27 +1,33 @@
-# Light/dark theme. $script:Theme is the active palette; tabs use its Good/Bad/Warn/Text colors for status text.
+# Light/dark theme. $script:Theme is the active palette; tabs use its Good/Bad/Warn/Text colors for status text
+# and Set-Role (MainWindow.ps1) for anything else that isn't a default color.
 # The choice is saved in settings.json under the toolkit's ProgramData folder and applied when the window loads.
 # Message boxes and file dialogs are drawn by Windows and keep the system look.
 
 $script:SettingsFile = Join-Path $env:ProgramData 'CanfieldDeploymentToolkit\settings.json'
 
+# Shorthand for an RGB color in the palettes below.
+function C([int]$R, [int]$G, [int]$B) { [System.Drawing.Color]::FromArgb($R, $G, $B) }
+
 $script:Themes = @{
     Light = @{
         Name = 'Light'; Dark = $false
-        Back = [System.Drawing.SystemColors]::Control; Surface = [System.Drawing.SystemColors]::Window
-        Text = [System.Drawing.SystemColors]::ControlText; Button = [System.Drawing.SystemColors]::Control
-        Border = [System.Drawing.SystemColors]::ControlDark; Tab = [System.Drawing.SystemColors]::Control
-        Good = [System.Drawing.Color]::ForestGreen; Bad = [System.Drawing.Color]::Firebrick
-        Warn = [System.Drawing.Color]::DarkGoldenrod; Link = [System.Drawing.Color]::Blue
-        Accent = [System.Drawing.SystemColors]::Highlight; Dim = [System.Drawing.SystemColors]::GrayText
+        Back = C 243 244 246; Side = C 232 234 238; Surface = C 255 255 255
+        Input = C 255 255 255; Text = C 31 35 41; Dim = C 95 104 120
+        Border = C 196 201 209; Line = C 214 217 223; Button = C 255 255 255
+        Hover = C 223 227 233; Accent = C 10 123 212; AccentHover = C 8 104 180
+        AccentText = C 255 255 255; Good = C 21 128 61; Bad = C 198 40 40
+        Warn = C 180 83 9; GoodBack = C 220 252 231; BadBack = C 254 226 226
+        WarnBack = C 254 243 199; Link = C 10 108 189
     }
     Dark = @{
         Name = 'Dark'; Dark = $true
-        Back = [System.Drawing.Color]::FromArgb(32, 32, 32); Surface = [System.Drawing.Color]::FromArgb(45, 45, 45)
-        Text = [System.Drawing.Color]::FromArgb(230, 230, 230); Button = [System.Drawing.Color]::FromArgb(55, 55, 55)
-        Border = [System.Drawing.Color]::FromArgb(95, 95, 95); Tab = [System.Drawing.Color]::FromArgb(50, 50, 50)
-        Good = [System.Drawing.Color]::FromArgb(110, 205, 110); Bad = [System.Drawing.Color]::FromArgb(245, 120, 110)
-        Warn = [System.Drawing.Color]::FromArgb(235, 195, 85); Link = [System.Drawing.Color]::FromArgb(120, 180, 255)
-        Accent = [System.Drawing.Color]::FromArgb(76, 160, 255); Dim = [System.Drawing.Color]::FromArgb(170, 170, 170)
+        Back = C 27 29 33; Side = C 20 21 24; Surface = C 38 41 47
+        Input = C 22 24 27; Text = C 230 232 235; Dim = C 139 147 161
+        Border = C 58 63 71; Line = C 51 55 62; Button = C 43 47 53
+        Hover = C 53 58 66; Accent = C 59 158 255; AccentHover = C 90 174 255
+        AccentText = C 11 18 32; Good = C 74 222 128; Bad = C 248 113 113
+        Warn = C 251 191 36; GoodBack = C 23 58 38; BadBack = C 63 29 29
+        WarnBack = C 61 47 16; Link = C 120 180 255
     }
 }
 
@@ -80,83 +86,179 @@ function Convert-AccentColor($Color, $Old) {
 }
 
 $script:ThemedListViews = New-Object 'System.Collections.Generic.HashSet[object]'
+# ListViews whose rows carry a status ('Good', 'Bad', 'Warn' or $null) in Tag, drawn with a dot and a badge column.
+$script:StatusListViews = New-Object 'System.Collections.Generic.HashSet[object]'
+$script:BadgeText = @{ Good = 'OK'; Warn = 'CHECK'; Bad = 'ACTION' }
 
-# ListViews draw their own column headers in dark mode (Windows draws them light whatever the BackColor).
+function New-Brush($Color) { New-Object System.Drawing.SolidBrush($Color) }
+
+# ListViews are owner-drawn so the column headers match the palette (Windows always draws them light).
 function Initialize-ListViewTheme($ListView) {
     if (-not $script:ThemedListViews.Add($ListView)) { return }
+    # A blank image list sets the row height.
+    $rows = New-Object System.Windows.Forms.ImageList
+    $rows.ImageSize = New-Object System.Drawing.Size(1, 20)
+    $ListView.SmallImageList = $rows
+    $ListView.OwnerDraw = $true
+    # The header past the last column can't be owner-drawn, so the last column fills it.
+    $ListView.Columns[$ListView.Columns.Count - 1].Width = -2
+
     $ListView.Add_DrawColumnHeader({
         param($sender, $e)
         $t = $script:Theme
-        $back = New-Object System.Drawing.SolidBrush($t.Tab)
-        $line = New-Object System.Drawing.Pen($t.Border)
+        $back = New-Brush $t.Side
+        $line = New-Object System.Drawing.Pen($t.Line)
         $e.Graphics.FillRectangle($back, $e.Bounds)
-        $e.Graphics.DrawLine($line, $e.Bounds.Right - 1, $e.Bounds.Top, $e.Bounds.Right - 1, $e.Bounds.Bottom)
         $e.Graphics.DrawLine($line, $e.Bounds.Left, $e.Bounds.Bottom - 1, $e.Bounds.Right, $e.Bounds.Bottom - 1)
-        $text = New-Object System.Drawing.Rectangle(($e.Bounds.X + 4), $e.Bounds.Y, ($e.Bounds.Width - 6), $e.Bounds.Height)
+        $text = New-Object System.Drawing.Rectangle(($e.Bounds.X + 8), $e.Bounds.Y, ($e.Bounds.Width - 10), $e.Bounds.Height)
         $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, EndEllipsis, NoPrefix'
-        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $e.Header.Text, $sender.Font, $text, $t.Text, $flags)
+        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $e.Header.Text.ToUpper(), $script:HeaderFont, $text, $t.Dim, $flags)
         $back.Dispose(); $line.Dispose()
     })
-    $last = $ListView.Columns[$ListView.Columns.Count - 1]
-    $last.Tag = $last.Width
-    $ListView.Add_DrawItem({ param($sender, $e) $e.DrawDefault = $true })
-    $ListView.Add_DrawSubItem({ param($sender, $e) $e.DrawDefault = $true })
+    $ListView.Add_DrawItem({ param($sender, $e) $e.DrawDefault = $false })
+    $ListView.Add_DrawSubItem({
+        param($sender, $e)
+        $t = $script:Theme
+        $g = $e.Graphics
+        $b = $e.Bounds
+        $back = New-Brush $(if ($e.Item.Selected) { $t.Hover } else { $t.Input })
+        $g.FillRectangle($back, $b)
+        $back.Dispose()
+        $state = [string]$e.Item.Tag
+        $statusList = $script:StatusListViews.Contains($sender)
+        $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, EndEllipsis, NoPrefix'
+        $font = if ($e.ColumnIndex -eq 1 -and $statusList) { $script:MonoFont } else { $sender.Font }
+        $textX = $b.X + 8
+        if ($statusList -and $e.ColumnIndex -eq 0) {
+            $textX = $b.X + 22
+            if ($state) {
+                $g.SmoothingMode = 'AntiAlias'
+                $dot = New-Brush $t[$state]
+                $g.FillEllipse($dot, ($b.X + 8), ($b.Y + [int](($b.Height - 8) / 2)), 8, 8)
+                $dot.Dispose()
+                $g.SmoothingMode = 'Default'
+            }
+        }
+        if ($statusList -and $e.ColumnIndex -eq 2) {
+            if ($state) {
+                $label = $script:BadgeText[$state]
+                $size = [System.Windows.Forms.TextRenderer]::MeasureText($label, $script:HeaderFont)
+                $badge = New-Object System.Drawing.Rectangle(($b.X + 8), ($b.Y + [int](($b.Height - 16) / 2)), ($size.Width + 4), 16)
+                $fill = New-Brush $t["${state}Back"]
+                $g.FillRectangle($fill, $badge)
+                $fill.Dispose()
+                [System.Windows.Forms.TextRenderer]::DrawText($g, $label, $script:HeaderFont, $badge, $t[$state],
+                    [System.Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, NoPrefix')
+            }
+        } else {
+            $rect = New-Object System.Drawing.Rectangle($textX, $b.Y, ($b.Right - $textX - 2), $b.Height)
+            [System.Windows.Forms.TextRenderer]::DrawText($g, $e.SubItem.Text, $font, $rect, $t.Text, $flags)
+        }
+        $line = New-Object System.Drawing.Pen($t.Line)
+        $g.DrawLine($line, $b.Left, $b.Bottom - 1, $b.Right, $b.Bottom - 1)
+        $line.Dispose()
+    })
+}
+
+# Combo boxes draw their own items; Windows otherwise paints the selected text white-on-blue whatever the colors.
+function Initialize-ComboTheme($Combo) {
+    if ($Combo.DrawMode -ne 'Normal') { return }
+    $Combo.DrawMode = 'OwnerDrawFixed'
+    $Combo.ItemHeight = 18
+    $Combo.Add_DrawItem({
+        param($sender, $e)
+        $t = $script:Theme
+        $edit = ($e.State -band [System.Windows.Forms.DrawItemState]::ComboBoxEdit) -ne 0
+        $selected = ($e.State -band [System.Windows.Forms.DrawItemState]::Selected) -ne 0
+        $hot = $selected -and -not $edit
+        $back = New-Brush $(if ($hot) { $t.Accent } else { $t.Input })
+        $e.Graphics.FillRectangle($back, $e.Bounds)
+        $back.Dispose()
+        if ($e.Index -lt 0) { return }
+        $fore = if ($hot) { $t.AccentText } elseif ($sender.Enabled) { $t.Text } else { $t.Dim }
+        $r = New-Object System.Drawing.Rectangle(($e.Bounds.X + 3), $e.Bounds.Y, ($e.Bounds.Width - 3), $e.Bounds.Height)
+        $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, EndEllipsis, NoPrefix'
+        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.GetItemText($sender.Items[$e.Index]), $sender.Font, $r, $fore, $flags)
+    })
 }
 
 # Applies the active palette to a control and all its children. $Old is the palette being replaced.
 function Set-ControlTheme($Control, $Old = $script:Theme) {
     $t = $script:Theme
     $dark = $t.Dark
+    $role = Get-Role $Control
 
-    $accent = Convert-AccentColor $Control.ForeColor $Old
-    if ($accent) { $Control.ForeColor = $accent }
-    elseif ($dark) { $Control.ForeColor = $t.Text }
-    else { $Control.ResetForeColor() }
-
-    if ($Control -is [System.Windows.Forms.ButtonBase]) {
-        if ($dark) {
-            $Control.FlatStyle = 'Flat'
-            $Control.FlatAppearance.BorderColor = $t.Border
-            $Control.FlatAppearance.MouseOverBackColor = $t.Border
-            $Control.FlatAppearance.CheckedBackColor = $t.Button
-            if ($Control -is [System.Windows.Forms.Button]) { $Control.BackColor = $t.Button } else { $Control.BackColor = $t.Back }
+    if ($Control -is [System.Windows.Forms.Button]) {
+        $Control.FlatStyle = 'Flat'
+        $Control.FlatAppearance.BorderSize = 1
+        if ($role -eq 'Nav') {
+            # Shell.ps1 colors the selected item; the rest blend into the sidebar.
+            $Control.FlatAppearance.BorderSize = 0
+            $Control.BackColor = $t.Side
+            $Control.ForeColor = $t.Dim
+            $Control.FlatAppearance.MouseOverBackColor = $t.Hover
+            $Control.FlatAppearance.MouseDownBackColor = $t.Hover
+        } elseif (-not $Control.Enabled) {
+            $Control.BackColor = $t.Back
+            $Control.ForeColor = $t.Dim
+            $Control.FlatAppearance.BorderColor = $t.Line
+        } elseif ($role -eq 'Primary') {
+            $Control.BackColor = $t.Accent
+            $Control.ForeColor = $t.AccentText
+            $Control.FlatAppearance.BorderColor = $t.Accent
+            $Control.FlatAppearance.MouseOverBackColor = $t.AccentHover
+            $Control.FlatAppearance.MouseDownBackColor = $t.AccentHover
         } else {
-            $Control.FlatStyle = 'Standard'
-            $Control.ResetBackColor()
-            $Control.UseVisualStyleBackColor = $true
+            $Control.BackColor = $t.Button
+            $Control.ForeColor = $t.Text
+            $Control.FlatAppearance.BorderColor = $t.Border
+            $Control.FlatAppearance.MouseOverBackColor = $t.Hover
+            $Control.FlatAppearance.MouseDownBackColor = $t.Border
         }
+    } elseif ($Control -is [System.Windows.Forms.ButtonBase]) {
+        $Control.FlatStyle = 'Flat'
+        $Control.FlatAppearance.BorderColor = $t.Border
+        $Control.FlatAppearance.CheckedBackColor = $t.Input
+        $Control.ResetBackColor()
+        $Control.ForeColor = if ($role -eq 'Dim') { $t.Dim } else { $t.Text }
     } elseif ($Control -is [System.Windows.Forms.TextBoxBase] -or $Control -is [System.Windows.Forms.ListBox] -or
               $Control -is [System.Windows.Forms.ListView] -or $Control -is [System.Windows.Forms.ComboBox]) {
-        if ($dark) { $Control.BackColor = $t.Surface } else { $Control.ResetBackColor() }
+        $Control.BackColor = $t.Input
+        $Control.ForeColor = $t.Text
         if ($Control -is [System.Windows.Forms.ComboBox]) {
-            $Control.FlatStyle = if ($dark) { 'Flat' } else { 'Standard' }
+            $Control.FlatStyle = 'Flat'
+            Initialize-ComboTheme $Control
+        }
+        else {
+            $Control.BorderStyle = 'FixedSingle'
+            Set-NativeTheme $Control $dark
         }
         if ($Control -is [System.Windows.Forms.ListView]) {
             Initialize-ListViewTheme $Control
-            $Control.OwnerDraw = $dark
-            # The header past the last column can't be owner-drawn, so the last column fills it while dark (-2).
-            $last = $Control.Columns[$Control.Columns.Count - 1]
-            $last.Width = if ($dark) { -2 } else { [int]$last.Tag }
-            foreach ($item in $Control.Items) {
-                $c = Convert-AccentColor $item.ForeColor $Old
-                if ($c) { $item.ForeColor = $c } else { $item.ForeColor = $Control.ForeColor }
-            }
-        }
-        if ($Control -isnot [System.Windows.Forms.ComboBox]) {
-            $Control.BorderStyle = if ($dark) { 'FixedSingle' } else { 'Fixed3D' }
-            Set-NativeTheme $Control $dark
+            foreach ($item in $Control.Items) { $item.ForeColor = $t.Text }
         }
     } elseif ($Control -is [System.Windows.Forms.TabPage]) {
-        if ($dark) { $Control.BackColor = $t.Back } else { $Control.ResetBackColor(); $Control.UseVisualStyleBackColor = $true }
-    } elseif ($Control -is [System.Windows.Forms.TabControl]) {
-        $Control.DrawMode = if ($dark) { 'OwnerDrawFixed' } else { 'Normal' }
-        Update-TabRegion $Control
+        $Control.UseVisualStyleBackColor = $false
+        $Control.BackColor = $t.Back
     } elseif ($Control -is [System.Windows.Forms.Form]) {
-        if ($dark) { $Control.BackColor = $t.Back } else { $Control.ResetBackColor() }
+        $Control.BackColor = $t.Back
+        $Control.ForeColor = $t.Text
         Set-NativeTheme $Control $dark $true
     } else {
-        # Labels, group boxes, panels: transparent-ish controls follow their parent.
-        $Control.ResetBackColor()
+        switch -Wildcard ($role) {
+            'Side'    { $Control.BackColor = $t.Side }
+            'Surface' { $Control.BackColor = $t.Surface }
+            'Line'    { $Control.BackColor = $t.Line }
+            'Accent'  { $Control.BackColor = $t.Accent }
+            'Badge*'  { $Control.BackColor = $t[$role.Substring(5) + 'Back']; $Control.ForeColor = $t[$role.Substring(5)] }
+            default   { $Control.ResetBackColor() }
+        }
+        if ($role -in 'Dim', 'Header') { $Control.ForeColor = $t.Dim }
+        elseif ($role -eq 'AccentText') { $Control.ForeColor = $t.Accent }
+        elseif ($role -notlike 'Badge*') {
+            $accent = Convert-AccentColor $Control.ForeColor $Old
+            if ($accent) { $Control.ForeColor = $accent } else { $Control.ForeColor = $t.Text }
+        }
     }
 
     if ($Control -is [System.Windows.Forms.LinkLabel]) {
@@ -186,56 +288,3 @@ function Set-Theme([string]$Name, [bool]$Save = $true) {
         Write-Log "Theme set to $Name"
     }
 }
-
-# The part of a tab header kept while dark: Windows draws a light outline on the outer 2 pixels.
-function Get-TabFace($TabControl, [int]$Index) {
-    $r = $TabControl.GetTabRect($Index)
-    $r.Inflate(-2, -2)
-    return $r
-}
-
-# Windows paints the tab strip and page border light whatever the colors. While dark, the TabControl's Region is cut
-# down to the tab headers and the page area, so the form's dark background shows everywhere else.
-function Update-TabRegion($TabControl) {
-    if (-not $script:Theme.Dark) { $TabControl.Region = $null; return }
-    $region = New-Object System.Drawing.Region($TabControl.DisplayRectangle)
-    for ($i = 0; $i -lt $TabControl.TabCount; $i++) {
-        $region.Union((Get-TabFace $TabControl $i))
-    }
-    $TabControl.Region = $region
-}
-
-# Tab headers while dark (the TabControl is owner-drawn only then): the selected tab is lighter with an accent bar.
-$tabs.Add_DrawItem({
-    param($sender, $e)
-    $t = $script:Theme
-    $selected = ($e.Index -eq $sender.SelectedIndex)
-    $face = Get-TabFace $sender $e.Index
-    $back = if ($selected) { $t.Button } else { $t.Surface }
-    $brush = New-Object System.Drawing.SolidBrush($back)
-    $e.Graphics.FillRectangle($brush, $face)
-    $brush.Dispose()
-    if ($selected) {
-        $bar = New-Object System.Drawing.SolidBrush($t.Accent)
-        $e.Graphics.FillRectangle($bar, $face.X, ($face.Bottom - 3), $face.Width, 3)
-        $bar.Dispose()
-    }
-    $fore = if ($selected) { $t.Text } else { $t.Dim }
-    $flags = [System.Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, NoPrefix'
-    [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.TabPages[$e.Index].Text, $sender.Font, $face, $fore, $flags)
-})
-
-# --- Toggle (bottom left of the main window, next to Close) ---
-$chkDark = New-Object System.Windows.Forms.CheckBox
-$chkDark.Text     = 'Dark theme'
-$chkDark.Location = New-Object System.Drawing.Point(12, 474)
-$chkDark.AutoSize = $true
-$chkDark.Checked  = $script:Theme.Dark
-$form.Controls.Add($chkDark)
-$chkDark.Add_CheckedChanged({
-    $name = if ($chkDark.Checked) { 'Dark' } else { 'Light' }
-    if ($name -ne $script:Theme.Name) { Set-Theme $name }
-})
-
-# Applied on Load so every tab's controls exist; nothing to do for the default light theme.
-$form.Add_Load({ if ($script:Theme.Dark) { Set-Theme 'Dark' $false } })

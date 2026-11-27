@@ -4,49 +4,40 @@ $tabUsers = New-Object System.Windows.Forms.TabPage; $tabUsers.Text = 'Users'
 [void]$tabs.TabPages.Add($tabUsers)
 
 function Add-Field($Parent, [string]$Label, [int]$Y) {
-    $l = New-Object System.Windows.Forms.Label
-    $l.Text     = $Label
-    $l.Location = New-Object System.Drawing.Point(12, $Y)
-    $l.AutoSize = $true
-    $Parent.Controls.Add($l)
+    [void](New-Label $Parent $Label 0 $Y 'Dim')
     $t = New-Object System.Windows.Forms.TextBox
-    $t.Location = New-Object System.Drawing.Point(12, ($Y + 18))
-    $t.Size     = New-Object System.Drawing.Size(265, 22)
+    $t.Location = New-Object System.Drawing.Point(0, ($Y + 19))
+    $t.Size     = New-Object System.Drawing.Size(300, 23)
     $Parent.Controls.Add($t)
     return $t
 }
 
 # --- Create user (left) ---
-$grpCreate = New-Object System.Windows.Forms.GroupBox
-$grpCreate.Text     = 'Create site user'
-$grpCreate.Location = New-Object System.Drawing.Point(10, 8)
-$grpCreate.Size     = New-Object System.Drawing.Size(290, 400)
-$tabUsers.Controls.Add($grpCreate)
+$grpCreate = New-Section $tabUsers 'Create site user' 14 420 20 300
 
-$userPrefix = Add-Field $grpCreate 'Prefix (optional, e.g. Dr.):' 22
-$userFirst  = Add-Field $grpCreate 'First name:' 68
-$userLast   = Add-Field $grpCreate 'Last name:' 114
-$userName   = Add-Field $grpCreate 'Username (filled in automatically):' 160
-$userPass   = Add-Field $grpCreate 'Temporary password:' 206
+$userPrefix = Add-Field $grpCreate 'Prefix (optional, e.g. Dr.)' 26
+$userFirst  = Add-Field $grpCreate 'First name' 76
+$userLast   = Add-Field $grpCreate 'Last name' 126
+$userName   = Add-Field $grpCreate 'Username (filled in automatically)' 176
+$userPass   = Add-Field $grpCreate 'Temporary password' 226
 $userPass.Text = $script:DefaultUserPassword
+Set-Mono $userName
+Set-Mono $userPass
 
 $userNote = New-Object System.Windows.Forms.Label
 $userNote.Text     = 'The user is added to the SSCT group and must choose a new password at first sign-in.'
-$userNote.Location = New-Object System.Drawing.Point(12, 254)
-$userNote.Size     = New-Object System.Drawing.Size(265, 32)
+$userNote.Location = New-Object System.Drawing.Point(0, 280)
+$userNote.Size     = New-Object System.Drawing.Size(300, 34)
+Set-Role $userNote 'Dim'
 $grpCreate.Controls.Add($userNote)
 
-$btnCreateUser = New-Object System.Windows.Forms.Button
-$btnCreateUser.Text     = 'Create User'
-$btnCreateUser.Location = New-Object System.Drawing.Point(157, 292)
-$btnCreateUser.Size     = New-Object System.Drawing.Size(120, 30)
-$grpCreate.Controls.Add($btnCreateUser)
+$btnCreateUser = New-Button $grpCreate 'Create User' 168 320 -Primary
 
 $ssoNote = New-Object System.Windows.Forms.Label
-$ssoNote.Text      = 'Only SSO protocols are installed. Their users sign in with SSO, so local users are usually not needed.'
+$ssoNote.Text      = "$script:Dot  Only SSO protocols are installed. Their users sign in with SSO, so local users are usually not needed."
 $ssoNote.ForeColor = $script:Theme.Bad
-$ssoNote.Location  = New-Object System.Drawing.Point(12, 332)
-$ssoNote.Size      = New-Object System.Drawing.Size(265, 48)
+$ssoNote.Location  = New-Object System.Drawing.Point(0, 362)
+$ssoNote.Size      = New-Object System.Drawing.Size(300, 48)
 $ssoNote.Visible   = $false
 $grpCreate.Controls.Add($ssoNote)
 
@@ -57,32 +48,21 @@ $userFirst.Add_TextChanged($updateUsername)
 $userLast.Add_TextChanged($updateUsername)
 
 # --- Existing users (right) ---
-$grpList = New-Object System.Windows.Forms.GroupBox
-$grpList.Text     = 'Site users (SSCT group)'
-$grpList.Location = New-Object System.Drawing.Point(310, 8)
-$grpList.Size     = New-Object System.Drawing.Size(290, 400)
-$tabUsers.Controls.Add($grpList)
+$grpList = New-Section $tabUsers 'Site users (SSCT group)' 14 420 338 300
 
 $userList = New-Object System.Windows.Forms.ListBox
-$userList.Location      = New-Object System.Drawing.Point(12, 22)
-$userList.Size          = New-Object System.Drawing.Size(265, 225)
+$userList.Location      = New-Object System.Drawing.Point(0, 26)
+$userList.Size          = New-Object System.Drawing.Size(300, 250)
+$userList.IntegralHeight = $false
 $userList.DisplayMember = 'Display'
 $userList.HorizontalScrollbar = $true
 $grpList.Controls.Add($userList)
 
-function New-UserButton([string]$Text, [int]$X, [int]$Y, [int]$Width = 130) {
-    $b = New-Object System.Windows.Forms.Button
-    $b.Text     = $Text
-    $b.Location = New-Object System.Drawing.Point($X, $Y)
-    $b.Size     = New-Object System.Drawing.Size($Width, 28)
-    $grpList.Controls.Add($b)
-    return $b
-}
-$btnResetPass  = New-UserButton 'Reset Password' 12 255
-$btnRenameUser = New-UserButton 'Change Name' 147 255
-$btnDeleteUser = New-UserButton 'Delete User' 12 289
-$btnUserReload = New-UserButton 'Refresh' 147 289
-$btnSharedAdmin = New-UserButton 'Create SharedAdmin Account' 12 358 265
+$btnResetPass   = New-Button $grpList 'Reset Password' 0 286 146
+$btnRenameUser  = New-Button $grpList 'Change Name' 154 286 146
+$btnDeleteUser  = New-Button $grpList 'Delete User' 0 322 146
+$btnUserReload  = New-Button $grpList 'Refresh' 154 322 146
+$btnSharedAdmin = New-Button $grpList 'Create SharedAdmin Account' 0 381 300
 
 function Update-UserButtons {
     $sel = $userList.SelectedItem

@@ -8,6 +8,7 @@ $status.FormBorderStyle = 'FixedDialog'
 $status.ControlBox      = $false
 $status.ShowInTaskbar   = $false
 $status.TopMost         = $true
+$status.Font            = $script:UiFont
 
 $statusLabel = New-Object System.Windows.Forms.Label
 $statusLabel.Location = New-Object System.Drawing.Point(15, 12)
@@ -38,11 +39,13 @@ function Enter-Busy([string]$text, [bool]$cancellable = $false) {
     $btnStop.Visible = $cancellable
     $form.Enabled = $false
     $status.Show($form)
+    if ($statusBarText) { $statusBarText.Text = ($text -split "`n")[0] }
     Set-Status $text
 }
 
 function Exit-Busy {
     $status.Hide()
+    if ($statusBarText) { $statusBarText.Text = 'Ready' }
     $form.Enabled = $true
     [void]$form.Activate()
 }
@@ -81,6 +84,7 @@ function Read-Text([string]$Prompt, [string]$Default) {
     $dlg.MaximizeBox     = $false
     $dlg.MinimizeBox     = $false
     $dlg.ShowInTaskbar   = $false
+    $dlg.Font            = $script:UiFont
 
     $lbl = New-Object System.Windows.Forms.Label
     $lbl.Text     = $Prompt
@@ -99,6 +103,7 @@ function Read-Text([string]$Prompt, [string]$Default) {
     $ok.Location     = New-Object System.Drawing.Point(212, 84)
     $ok.Size         = New-Object System.Drawing.Size(75, 26)
     $ok.DialogResult = [System.Windows.Forms.DialogResult]::OK
+    Set-Role $ok 'Primary'
     $dlg.Controls.Add($ok)
     $dlg.AcceptButton = $ok
 

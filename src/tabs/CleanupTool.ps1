@@ -3,56 +3,35 @@
 $tabClean = New-Object System.Windows.Forms.TabPage; $tabClean.Text = 'Cleanup Tool'
 [void]$tabs.TabPages.Add($tabClean)
 
-$cleanDirtyLabel = New-Object System.Windows.Forms.Label
-$cleanDirtyLabel.Text     = 'Needs cleanup:'
-$cleanDirtyLabel.Location = New-Object System.Drawing.Point(15, 15)
-$cleanDirtyLabel.AutoSize = $true
-$tabClean.Controls.Add($cleanDirtyLabel)
-
+$grpDirty = New-Section $tabClean 'Needs cleanup' 14 330 20 300
 $dirtyList = New-Object System.Windows.Forms.ListBox
-$dirtyList.Location      = New-Object System.Drawing.Point(15, 38)
-$dirtyList.Size          = New-Object System.Drawing.Size(285, 270)
+$dirtyList.Location      = New-Object System.Drawing.Point(0, 26)
+$dirtyList.Size          = New-Object System.Drawing.Size(300, 304)
+$dirtyList.IntegralHeight = $false
 $dirtyList.SelectionMode = 'MultiExtended'
 $dirtyList.DisplayMember = 'Display'
-$tabClean.Controls.Add($dirtyList)
+$grpDirty.Controls.Add($dirtyList)
 
-$cleanCleanLabel = New-Object System.Windows.Forms.Label
-$cleanCleanLabel.Text     = 'Already clean:'
-$cleanCleanLabel.Location = New-Object System.Drawing.Point(310, 15)
-$cleanCleanLabel.AutoSize = $true
-$tabClean.Controls.Add($cleanCleanLabel)
-
+$grpClean = New-Section $tabClean 'Already clean' 14 330 338 300
 $cleanList = New-Object System.Windows.Forms.ListBox
-$cleanList.Location      = New-Object System.Drawing.Point(310, 38)
-$cleanList.Size          = New-Object System.Drawing.Size(285, 270)
+$cleanList.Location      = New-Object System.Drawing.Point(0, 26)
+$cleanList.Size          = New-Object System.Drawing.Size(300, 304)
+$cleanList.IntegralHeight = $false
 $cleanList.DisplayMember = 'Display'
 $cleanList.SelectionMode = 'None'
-$tabClean.Controls.Add($cleanList)
+$grpClean.Controls.Add($cleanList)
 
 $cleanNote = New-Object System.Windows.Forms.Label
 $cleanNote.Text     = "Clean Selected deletes the selected versions' site data (registered users are kept) and opens Canfield Capture to set the Site ID. Set Site IDs opens every installed version so you can set its Site ID."
-$cleanNote.Location = New-Object System.Drawing.Point(15, 318)
-$cleanNote.Size     = New-Object System.Drawing.Size(580, 36)
+$cleanNote.Location = New-Object System.Drawing.Point(20, 356)
+$cleanNote.Size     = New-Object System.Drawing.Size($script:PageWidth, 36)
+Set-Role $cleanNote 'Dim'
 $tabClean.Controls.Add($cleanNote)
 
-$btnRefresh = New-Object System.Windows.Forms.Button
-$btnRefresh.Text     = 'Refresh'
-$btnRefresh.Location = New-Object System.Drawing.Point(15, 385)
-$btnRefresh.Size     = New-Object System.Drawing.Size(90, 30)
-$tabClean.Controls.Add($btnRefresh)
-
-$btnClean = New-Object System.Windows.Forms.Button
-$btnClean.Text     = 'Clean Selected'
-$btnClean.Location = New-Object System.Drawing.Point(475, 385)
-$btnClean.Size     = New-Object System.Drawing.Size(120, 30)
-$btnClean.Enabled  = $false
-$tabClean.Controls.Add($btnClean)
-
-$btnSiteIds = New-Object System.Windows.Forms.Button
-$btnSiteIds.Text     = 'Set Site IDs'
-$btnSiteIds.Location = New-Object System.Drawing.Point(115, 385)
-$btnSiteIds.Size     = New-Object System.Drawing.Size(110, 30)
-$tabClean.Controls.Add($btnSiteIds)
+$btnRefresh = New-Button $tabClean 'Refresh' 20 482 110
+$btnSiteIds = New-Button $tabClean 'Set Site IDs' 138 482 120
+$btnClean   = New-Button $tabClean 'Clean Selected' 506 482 -Primary
+$btnClean.Enabled = $false
 
 function Update-CleanupLists {
     $dirtyList.Items.Clear()

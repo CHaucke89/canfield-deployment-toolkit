@@ -3,39 +3,36 @@
 $tabScripts = New-Object System.Windows.Forms.TabPage; $tabScripts.Text = 'Scripts'
 [void]$tabs.TabPages.Add($tabScripts)
 
-$grpScripts = New-Group $tabScripts 'Canfield scripts' 8 150
+$rowsHeight = $script:CanfieldScripts.Count * 38
+$grpScripts = New-Section $tabScripts 'Canfield scripts' 14 ($rowsHeight + 52)
 
 $scriptRows = foreach ($i in 0..($script:CanfieldScripts.Count - 1)) {
     $def = $script:CanfieldScripts[$i]
-    $y = 24 + $i * 34
+    $y = 26 + $i * 38
     $name = New-Object System.Windows.Forms.Label
     $name.Text     = $def.Name
-    $name.Location = New-Object System.Drawing.Point(12, ($y + 6))
-    $name.Size     = New-Object System.Drawing.Size(170, 18)
+    $name.Location = New-Object System.Drawing.Point(0, ($y + 6))
+    $name.Size     = New-Object System.Drawing.Size(180, 18)
     $grpScripts.Controls.Add($name)
 
     $state = New-Object System.Windows.Forms.Label
-    $state.Location = New-Object System.Drawing.Point(185, ($y + 6))
-    $state.Size     = New-Object System.Drawing.Size(110, 18)
+    $state.Location = New-Object System.Drawing.Point(190, ($y + 6))
+    $state.Size     = New-Object System.Drawing.Size(130, 18)
     $grpScripts.Controls.Add($state)
 
-    $buttons = foreach ($b in @(@('Install', 310), @('Turn On', 400), @('Turn Off', 490))) {
-        $btn = New-Object System.Windows.Forms.Button
-        $btn.Text     = $b[0]
-        $btn.Location = New-Object System.Drawing.Point($b[1], $y)
-        $btn.Size     = New-Object System.Drawing.Size(88, 28)
-        $btn.Tag      = $def
-        $grpScripts.Controls.Add($btn)
+    $buttons = foreach ($b in @(@('Install', 330), @('Turn On', 429), @('Turn Off', 528))) {
+        $btn = New-Button $grpScripts $b[0] $b[1] $y 90
+        $btn.Tag = $def
         $btn
     }
     [pscustomobject]@{ Def = $def; State = $state; Install = $buttons[0]; On = $buttons[1]; Off = $buttons[2] }
 }
 
 $scriptsNote = New-Object System.Windows.Forms.Label
-$scriptsNote.Text      = 'Script files not found. Put the Scripts folder next to CDT.exe to install them.'
+$scriptsNote.Text      = "$script:Dot  " + 'Script files not found. Put the Scripts folder next to CDT.exe to install them.'
 $scriptsNote.ForeColor = $script:Theme.Bad
-$scriptsNote.Location  = New-Object System.Drawing.Point(12, 128)
-$scriptsNote.Size      = New-Object System.Drawing.Size(566, 18)
+$scriptsNote.Location  = New-Object System.Drawing.Point(0, ($rowsHeight + 32))
+$scriptsNote.Size      = New-Object System.Drawing.Size($script:PageWidth, 18)
 $grpScripts.Controls.Add($scriptsNote)
 
 foreach ($row in $scriptRows) {
