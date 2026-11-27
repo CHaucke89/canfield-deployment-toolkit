@@ -13,7 +13,7 @@ Windows deployment toolkit for common machine-setup tasks in one GUI:
 - Clean Canfield Capture site databases, set Site IDs, and force SSCT users to change passwords.
 - Check the machine's status and save a QC report.
 
-The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe`). For how to use each tab, see the [User Guide](USER-GUIDE.md).
+The toolkit can run as a PowerShell script or as a packaged executable (`CDT.exe`). For how to use each page, see the [User Guide](USER-GUIDE.md).
 
 `CDT.exe` builds from `master` and releases are Authenticode-signed with the repository owner's certificate through Azure Artifact Signing. To verify, open the exe's Properties and check the Digital Signatures tab.
 
@@ -207,7 +207,7 @@ Ported from the Cleanup Tool in the Canfield Setup Tool (`CST.ps1`, not included
 
 ### Summary Tab
 
-- Shows computer name, service tag, model, date and time, time zone, Wi-Fi, BitLocker, LogMeIn, Resolve MDM, installed Canfield Capture versions and the number of site users. Refreshes each time the tab is opened.
+- Shows computer name, service tag, model, date and time, time zone, Wi-Fi, BitLocker, LogMeIn, Resolve MDM, installed Canfield Capture versions and the number of site users, with an OK, CHECK or ACTION tag on each status. Refreshes each time the tab is opened.
 - Lists installed protocols with their version, SSO use, and the Site ID last logged by Canfield Capture (`C:\ProgramData\Canfield\DiagLib`). A cleaned version shows "Not set" until its Site ID is set again.
 - **Save Report** (technician initials required) saves a JPG picture of the window plus a `.txt` with the same name, containing every check, the protocols, initials and comments, and a copy of the toolkit log (`.log`, see [Log File](#log-file)).
 - **Open Log Folder** opens the toolkit's log folder (see [Log File](#log-file)).

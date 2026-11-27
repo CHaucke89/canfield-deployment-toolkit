@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    Deploy Toolkit: one window with seven tabs.
+    Deploy Toolkit: one window with seven pages, picked from the sidebar.
       1) Computer         - renames the machine, sets the 'Site Photographer' password, sets the time zone, syncs the clock, checks for and installs Windows updates.
       2) Remote Access    - installs LogMeIn for a sponsor from the CSV, enrolls in Resolve MDM, shows BitLocker status.
       3) Canfield Capture - finds setup.exe on connected USB drive(s) or via Browse...; installs the chosen one silently.
-      4) Cleanup Tool     - wipes Canfield Capture site data per version, sets Site IDs, expires SSCT passwords.
-      5) Summary          - machine status and installed protocols; saves a QC report.
-      6) Users            - creates, resets and deletes SSCT site users; creates the SharedAdmin account.
+      4) Users            - creates, resets and deletes SSCT site users; creates the SharedAdmin account.
+      5) Cleanup Tool     - wipes Canfield Capture site data per version, sets Site IDs, expires SSCT passwords.
+      6) Summary          - machine status and installed protocols; saves a QC report.
       7) Scripts          - installs and turns on/off the Canfield scripts (Reboot, BGInfo, Windows Update).
 
     This file is only the entry point (startup, elevation, loading, show window). The UI and logic live
