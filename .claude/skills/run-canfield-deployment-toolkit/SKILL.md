@@ -31,7 +31,9 @@ It prints `PASS`/`FAIL` per check, then `All checks passed` (exit 0) or `N check
 
 The workflow runs on every push that touches `Install-Toolkit.ps1`, `src/**`, this skill or the workflow, on
 any branch. It runs the smoke test, then `driver.ps1` with `steps-default.ps1`: one shot per tab, the response
-code for `00000001` (must be `1000007B`), and an invalid computer name that raises one warning box.
+code for `00000001` (must be `1000007B`), an invalid computer name that raises one warning box, then every
+tab again in the dark theme (`NN-<tab>-dark.png`, plus one real screen capture of Summary, since
+`DrawToBitmap` ignores the dark tab strip and title bar) and a return to light.
 
 ```bash
 git push -u origin <branch>

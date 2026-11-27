@@ -38,7 +38,7 @@ if ($sponsors.Count -eq 0) {
     $combo.Enabled = $false
     $lmiNote = New-Object System.Windows.Forms.Label
     $lmiNote.Text      = "No sponsors available. CSV not found or empty: $CsvPath"
-    $lmiNote.ForeColor = [System.Drawing.Color]::Firebrick
+    $lmiNote.ForeColor = $script:Theme.Bad
     $lmiNote.Location  = New-Object System.Drawing.Point(12, 92)
     $lmiNote.Size      = New-Object System.Drawing.Size(566, 18)
     $grpLmi.Controls.Add($lmiNote)
@@ -146,9 +146,9 @@ $bitLockerTimer.Interval = 10000
 function Update-BitLockerInfo {
     $status = Get-BitLockerSummary
     $bitLockerInfo.Text = "Drive ${env:SystemDrive} $status"
-    $bitLockerInfo.ForeColor = if ($status -eq 'Encrypted') { [System.Drawing.Color]::ForestGreen }
-        elseif ($status -match '^(Encrypting|Decrypting)') { [System.Drawing.Color]::DarkGoldenrod }
-        else { [System.Drawing.Color]::Firebrick }
+    $bitLockerInfo.ForeColor = if ($status -eq 'Encrypted') { $script:Theme.Good }
+        elseif ($status -match '^(Encrypting|Decrypting)') { $script:Theme.Warn }
+        else { $script:Theme.Bad }
     $bitLockerTimer.Enabled = ($status -match '^(Encrypting|Decrypting)') -and ($tabs.SelectedTab -eq $tabRemote)
 }
 

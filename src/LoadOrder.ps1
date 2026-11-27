@@ -11,6 +11,7 @@
     'lib\Status.ps1'
     'ui\MainWindow.ps1'
     'ui\Progress.ps1'
+    'ui\Theme.ps1'
     'tabs\Computer.ps1'
     'tabs\RemoteAccess.ps1'
     'tabs\CanfieldCapture.ps1'
