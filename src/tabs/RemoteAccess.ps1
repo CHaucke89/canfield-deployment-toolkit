@@ -126,9 +126,8 @@ $bitLockerTimer.Interval = 10000
 
 function Update-BitLockerInfo {
     $status = Get-BitLockerSummary
-    $state = if ($status -eq 'Encrypted') { 'Good' } elseif ($status -match '^(Encrypting|Decrypting)') { 'Warn' } else { 'Bad' }
-    Set-StatusLabel $bitLockerInfo "Drive ${env:SystemDrive} $status" $state
-    $bitLockerTimer.Enabled = ($state -eq 'Warn') -and ($tabs.SelectedTab -eq $tabRemote)
+    Set-StatusLabel $bitLockerInfo "Drive ${env:SystemDrive} $status" (Get-BitLockerState $status)
+    $bitLockerTimer.Enabled = ($status -match '^(Encrypting|Decrypting)') -and ($tabs.SelectedTab -eq $tabRemote)
 }
 
 $btnBitLocker.Add_Click({ Update-BitLockerInfo })

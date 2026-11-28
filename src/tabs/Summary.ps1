@@ -58,10 +58,9 @@ function Update-Summary {
             'Canfield Capture' = if ($installs.Count) { ($installs | ForEach-Object { $_.Display }) -join ', ' } else { 'Not installed' }
             'Site users'       = '{0} in the SSCT group' -f $users.Count
         }
-        $bitLocker = $rows['BitLocker']
         $states = @{
             'Wi-Fi'            = if ($rows['Wi-Fi'] -like 'Connected*') { 'Good' } else { 'Warn' }
-            'BitLocker'        = if ($bitLocker -eq 'Encrypted') { 'Good' } elseif ($bitLocker -match '^(Encrypt|Decrypt)') { 'Warn' } else { 'Bad' }
+            'BitLocker'        = Get-BitLockerState $rows['BitLocker']
             'LogMeIn'          = if ($rows['LogMeIn'] -eq 'Installed') { 'Good' } else { 'Bad' }
             'Resolve MDM'      = if ($rows['Resolve MDM'] -eq 'Enrolled') { 'Good' } else { 'Bad' }
             'Canfield Capture' = if ($installs.Count) { 'Good' } else { 'Bad' }
