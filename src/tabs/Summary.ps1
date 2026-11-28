@@ -1,7 +1,6 @@
 # Tab: Summary (machine status, installed protocols, QC report)
 
-$tabSummary = New-Object System.Windows.Forms.TabPage; $tabSummary.Text = 'Summary'
-[void]$tabs.TabPages.Add($tabSummary)
+$tabSummary = New-Page 'Summary' 0xE9D9
 
 function New-ListView($Parent, [int]$Height, [object[]]$Columns) {
     $lv = New-Object System.Windows.Forms.ListView
@@ -17,17 +16,13 @@ function New-ListView($Parent, [int]$Height, [object[]]$Columns) {
 
 $grpChecks = New-Section $tabSummary 'Checks' 14 290
 $statusView = New-ListView $grpChecks 264 @(@('Check', 170), @('Result', 340), @('Status', 90))
-[void]$script:StatusListViews.Add($statusView)
+Set-Role $statusView 'Status'
 $grpProtocols = New-Section $tabSummary 'Protocols' 312 90
 $protocolView = New-ListView $grpProtocols 64 @(@('Protocol', 220), @('Version', 120), @('Site ID', 150), @('SSO', 75))
 
 $grpReport = New-Section $tabSummary 'Report' 410 72
 [void](New-Label $grpReport 'Technician initials' 0 29 'Dim')
-$initialsBox = New-Object System.Windows.Forms.TextBox
-$initialsBox.Location = New-Object System.Drawing.Point(120, 26)
-$initialsBox.Size     = New-Object System.Drawing.Size(80, 23)
-Set-Mono $initialsBox
-$grpReport.Controls.Add($initialsBox)
+$initialsBox = New-TextBox $grpReport 120 26 80 -Mono
 
 [void](New-Label $grpReport 'Comments' 226 29 'Dim')
 $commentsBox = New-Object System.Windows.Forms.TextBox
@@ -41,6 +36,8 @@ $btnSummaryRefresh = New-Button $tabSummary 'Refresh' 20 488 110
 $btnLogFolder      = New-Button $tabSummary 'Open Log Folder' 138 488 130
 $btnReport         = New-Button $tabSummary 'Save Report' 506 488 -Primary
 Set-EnterButton $initialsBox $btnReport
+
+$script:BadgeText = @{ Good = 'OK'; Warn = 'CHECK'; Bad = 'ACTION' }
 
 function Update-Summary {
     Enter-Busy 'Checking this computer...'
@@ -61,10 +58,9 @@ function Update-Summary {
             'Canfield Capture' = if ($installs.Count) { ($installs | ForEach-Object { $_.Display }) -join ', ' } else { 'Not installed' }
             'Site users'       = '{0} in the SSCT group' -f $users.Count
         }
-        $bitLocker = $rows['BitLocker']
         $states = @{
             'Wi-Fi'            = if ($rows['Wi-Fi'] -like 'Connected*') { 'Good' } else { 'Warn' }
-            'BitLocker'        = if ($bitLocker -eq 'Encrypted') { 'Good' } elseif ($bitLocker -match '^(Encrypt|Decrypt)') { 'Warn' } else { 'Bad' }
+            'BitLocker'        = Get-BitLockerState $rows['BitLocker']
             'LogMeIn'          = if ($rows['LogMeIn'] -eq 'Installed') { 'Good' } else { 'Bad' }
             'Resolve MDM'      = if ($rows['Resolve MDM'] -eq 'Enrolled') { 'Good' } else { 'Bad' }
             'Canfield Capture' = if ($installs.Count) { 'Good' } else { 'Bad' }

@@ -1,7 +1,6 @@
 # Tab: Computer (computer name, Site Photographer password, date/time, Windows Update)
 
-$tabComputer = New-Object System.Windows.Forms.TabPage; $tabComputer.Text = 'Computer'
-[void]$tabs.TabPages.Add($tabComputer)
+$tabComputer = New-Page 'Computer' 0xE977
 
 # --- Computer name ---
 $grpName = New-Section $tabComputer 'Computer name' 14 98
@@ -12,12 +11,8 @@ Set-Mono $nameCurrent
 $nameRestart = New-Label $grpName 'RESTART PENDING' 0 28 'BadgeWarn'
 $nameRestart.Visible = $false
 
-$nameBox = New-Object System.Windows.Forms.TextBox
+$nameBox = New-TextBox $grpName 0 50 476 -Mono
 $nameBox.MaxLength = 15
-$nameBox.Location  = New-Object System.Drawing.Point(0, 50)
-$nameBox.Size      = New-Object System.Drawing.Size(476, 23)
-Set-Mono $nameBox
-$grpName.Controls.Add($nameBox)
 
 $btnName = New-Button $grpName 'Rename Computer' 486 48 -Primary
 $btnName.Enabled = $false
@@ -73,11 +68,7 @@ $photoLabel = New-Label $grpPhoto '' 110 26
 Set-Mono $photoLabel
 Update-PhotoLabel
 
-$photoBox = New-Object System.Windows.Forms.TextBox
-$photoBox.Location = New-Object System.Drawing.Point(0, 50)
-$photoBox.Size     = New-Object System.Drawing.Size(476, 23)
-Set-Mono $photoBox
-$grpPhoto.Controls.Add($photoBox)
+$photoBox = New-TextBox $grpPhoto 0 50 476 -Mono
 
 $btnPhoto = New-Button $grpPhoto 'Set Password' 486 48 -Primary
 $btnPhoto.Enabled = $false
@@ -233,10 +224,8 @@ $updateWorker = {
     }
 }
 
-# Status colors get a dot in front; plain text (the theme's Text color) doesn't.
-function Set-UpdateInfo([string]$Text, $Color, [string[]]$Lines) {
-    $updateInfo.Text      = if ($Color -eq $script:Theme.Text) { $Text } else { "$script:Dot  $Text" }
-    $updateInfo.ForeColor = $Color
+function Set-UpdateInfo([string]$Text, [string]$State, [string[]]$Lines) {
+    Set-StatusLabel $updateInfo $Text $State
     $updateList.Items.Clear()
     foreach ($l in $Lines) { if ($l) { [void]$updateList.Items.Add($l) } }
 }
@@ -257,13 +246,13 @@ function Start-UpdateWorker([bool]$Install) {
 }
 
 $btnUpdate.Add_Click({
-    Set-UpdateInfo 'Checking for updates...' ($script:Theme.Text) @()
+    Set-UpdateInfo 'Checking for updates...' '' @()
     Write-Log 'Checking for Windows updates'
     Start-UpdateWorker $false
 })
 
 $btnInstallUpdates.Add_Click({
-    Set-UpdateInfo 'Installing updates...' ($script:Theme.Text) @($updateList.Items)
+    Set-UpdateInfo 'Installing updates...' '' @($updateList.Items)
     Write-Log 'Installing Windows updates'
     Start-UpdateWorker $true
 })
@@ -282,7 +271,7 @@ $updateTimer.Add_Tick({
 
     if ($shared.Error) {
         $what = if ($shared.Install) { 'install' } else { 'check for' }
-        Set-UpdateInfo "Could not $what updates." ($script:Theme.Bad) @("Error: $($shared.Error)")
+        Set-UpdateInfo "Could not $what updates." 'Bad' @("Error: $($shared.Error)")
         Write-Log "Windows Update ($($shared.Step.ToLower())) failed: $($shared.Error)" 'ERROR'
         $btnInstallUpdates.Enabled = ($shared.Titles.Count -gt 0)
         return
@@ -295,12 +284,10 @@ $updateTimer.Add_Tick({
         $installed = $shared.Results.Count - $failed.Count
         $text = "$installed of $($shared.Results.Count) updates installed."
         if ($shared.RebootRequired) { $text += ' Restart required.' }
-        $color = if ($failed.Count) { $script:Theme.Bad }
-            elseif ($shared.RebootRequired) { $script:Theme.Warn }
-            else { $script:Theme.Good }
+        $result = if ($failed.Count) { 'Bad' } elseif ($shared.RebootRequired) { 'Warn' } else { 'Good' }
         $lines = @($shared.Results | ForEach-Object { "$(if ($_.Ok) { 'Installed' } else { 'Failed' }): $($_.Title)" }) +
             @($shared.Skipped | ForEach-Object { "Skipped (needs user input): $_" })
-        Set-UpdateInfo $text $color $lines
+        Set-UpdateInfo $text $result $lines
         Write-Log "Windows Update: $text"
         $btnInstallUpdates.Enabled = ($failed.Count -gt 0)
         if ($shared.RebootRequired) {
@@ -317,12 +304,12 @@ $updateTimer.Add_Tick({
 
     $count = $shared.Titles.Count
     if ($count -eq 0) {
-        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." ($script:Theme.Good) @()
+        Set-UpdateInfo "Up to date (checked $(Get-Date -Format 'HH:mm'))." 'Good' @()
         Write-Log 'Windows Update: up to date'
         return
     }
     $noun = if ($count -eq 1) { 'update' } else { 'updates' }
-    Set-UpdateInfo "$count $noun available." ($script:Theme.Warn) $shared.Titles
+    Set-UpdateInfo "$count $noun available." 'Warn' $shared.Titles
     Write-Log "Windows Update: $count $noun available"
     foreach ($t in $shared.Titles) { Write-Log "  $t" }
     $btnInstallUpdates.Enabled = $true

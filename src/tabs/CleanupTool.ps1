@@ -1,7 +1,6 @@
 # Tab: Cleanup Tool
 
-$tabClean = New-Object System.Windows.Forms.TabPage; $tabClean.Text = 'Cleanup Tool'
-[void]$tabs.TabPages.Add($tabClean)
+$tabClean = New-Page 'Cleanup Tool' 0xE74D
 
 $grpDirty = New-Section $tabClean 'Needs cleanup' 14 330 20 300
 $dirtyList = New-Object System.Windows.Forms.ListBox

@@ -33,6 +33,13 @@ function Get-BitLockerSummary {
     }
 }
 
+# Good when fully protected, Warn while encrypting/decrypting or when encrypted with a gap, Bad otherwise.
+function Get-BitLockerState([string]$Summary) {
+    if ($Summary -eq 'Encrypted') { return 'Good' }
+    if ($Summary -match '^(Encrypt|Decrypt)') { return 'Warn' }
+    return 'Bad'
+}
+
 function Test-LogMeInInstalled {
     $keys = @('HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
               'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*')

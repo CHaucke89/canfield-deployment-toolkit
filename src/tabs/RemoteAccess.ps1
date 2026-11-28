@@ -1,17 +1,13 @@
 # Tab: Remote Access (LogMeIn, Resolve MDM, BitLocker)
 
-$tabRemote = New-Object System.Windows.Forms.TabPage; $tabRemote.Text = 'Remote Access'
-[void]$tabs.TabPages.Add($tabRemote)
+$tabRemote = New-Page 'Remote Access' 0xE8AF
 
 # --- LogMeIn ---
 $grpLmi = New-Section $tabRemote 'LogMeIn' 14 124
 
 $sponsors = @(Get-Sponsors $CsvPath $EmbeddedCsv)
 
-$lmiStatus = New-Object System.Windows.Forms.Label
-$lmiStatus.Location = New-Object System.Drawing.Point(0, 27)
-$lmiStatus.AutoSize = $true
-$grpLmi.Controls.Add($lmiStatus)
+$lmiStatus = New-Label $grpLmi '' 0 27
 
 $lmiLabel = New-Label $grpLmi 'Select the sponsor to install LogMeIn for:' 0 51 'Dim'
 
@@ -29,8 +25,7 @@ $btnLmi.Enabled = $false
 if ($sponsors.Count -eq 0) {
     $combo.Enabled = $false
     $lmiNote = New-Object System.Windows.Forms.Label
-    $lmiNote.Text      = "No sponsors available. CSV not found or empty: $CsvPath"
-    $lmiNote.ForeColor = $script:Theme.Bad
+    Set-StatusLabel $lmiNote "No sponsors available. CSV not found or empty: $CsvPath" 'Bad'
     $lmiNote.Location  = New-Object System.Drawing.Point(0, 102)
     $lmiNote.Size      = New-Object System.Drawing.Size($script:PageWidth, 18)
     $lmiNote.AutoEllipsis = $true
@@ -104,14 +99,14 @@ $btnMdm.Add_Click({
 })
 
 function Update-RemoteTab {
-    if (Test-LogMeInInstalled) { Set-StatusLabel $lmiStatus 'LogMeIn is installed.' $true }
-    else                       { Set-StatusLabel $lmiStatus 'LogMeIn is not installed.' $false }
+    if (Test-LogMeInInstalled) { Set-StatusLabel $lmiStatus 'LogMeIn is installed.' 'Good' }
+    else                       { Set-StatusLabel $lmiStatus 'LogMeIn is not installed.' 'Bad' }
 
     $enrolled = Test-ResolveMdmEnrolled
     $ppkg = Find-ScriptsFile $script:MdmPackage
-    if ($enrolled)  { Set-StatusLabel $mdmStatus 'Enrolled in Resolve MDM.' $true }
-    elseif ($ppkg)  { Set-StatusLabel $mdmStatus 'Not enrolled.' $false }
-    else            { Set-StatusLabel $mdmStatus 'Not enrolled. CanfieldScientific.ppkg not found in the Scripts folder.' $false }
+    if ($enrolled)  { Set-StatusLabel $mdmStatus 'Enrolled in Resolve MDM.' 'Good' }
+    elseif ($ppkg)  { Set-StatusLabel $mdmStatus 'Not enrolled.' 'Bad' }
+    else            { Set-StatusLabel $mdmStatus 'Not enrolled. CanfieldScientific.ppkg not found in the Scripts folder.' 'Bad' }
     $btnMdm.Enabled = (-not $enrolled) -and [bool]$ppkg
 }
 
@@ -131,10 +126,7 @@ $bitLockerTimer.Interval = 10000
 
 function Update-BitLockerInfo {
     $status = Get-BitLockerSummary
-    $bitLockerInfo.Text = "$script:Dot  Drive ${env:SystemDrive} $status"
-    $bitLockerInfo.ForeColor = if ($status -eq 'Encrypted') { $script:Theme.Good }
-        elseif ($status -match '^(Encrypting|Decrypting)') { $script:Theme.Warn }
-        else { $script:Theme.Bad }
+    Set-StatusLabel $bitLockerInfo "Drive ${env:SystemDrive} $status" (Get-BitLockerState $status)
     $bitLockerTimer.Enabled = ($status -match '^(Encrypting|Decrypting)') -and ($tabs.SelectedTab -eq $tabRemote)
 }
 

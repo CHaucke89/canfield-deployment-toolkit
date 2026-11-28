@@ -1,7 +1,6 @@
 # Tab: Canfield Capture
 
-$tabUsb = New-Object System.Windows.Forms.TabPage; $tabUsb.Text = 'Canfield Capture'
-[void]$tabs.TabPages.Add($tabUsb)
+$tabUsb = New-Page 'Canfield Capture' 0xE722
 
 $grpInstallers = New-Section $tabUsb 'Installers' 14 382
 
@@ -26,8 +25,8 @@ $list.ItemHeight    = 22
 $grpInstallers.Controls.Add($list)
 
 # Legend for the list colors.
-$legendInstalled = New-Label $grpInstallers "$script:Dot  Installed on this computer" 0 354
-$legendInstalled.ForeColor = $script:Theme.Good
+$legendInstalled = New-Label $grpInstallers '' 0 354
+Set-StatusLabel $legendInstalled 'Installed on this computer' 'Good'
 [void](New-Label $grpInstallers "$script:Dot  Not installed" 200 354 'Dim')
 
 $btnUsb = New-Button $grpInstallers 'Install Selected' 486 348 -Primary
@@ -37,21 +36,13 @@ $btnUsb.Enabled = $false
 $grpResponse = New-Section $tabUsb 'Response code' 410 62
 
 [void](New-Label $grpResponse 'Request code' 0 30 'Dim')
-$txtRequest = New-Object System.Windows.Forms.TextBox
-$txtRequest.Location  = New-Object System.Drawing.Point(90, 27)
-$txtRequest.Size      = New-Object System.Drawing.Size(90, 23)
+$txtRequest = New-TextBox $grpResponse 90 27 90 -Mono
 $txtRequest.MaxLength = 8
 $txtRequest.CharacterCasing = 'Upper'
-Set-Mono $txtRequest
-$grpResponse.Controls.Add($txtRequest)
 
 [void](New-Label $grpResponse 'Response code' 200 30 'Dim')
-$txtResponse = New-Object System.Windows.Forms.TextBox
-$txtResponse.Location = New-Object System.Drawing.Point(296, 27)
-$txtResponse.Size     = New-Object System.Drawing.Size(90, 23)
+$txtResponse = New-TextBox $grpResponse 296 27 90 -Mono
 $txtResponse.ReadOnly = $true
-Set-Mono $txtResponse
-$grpResponse.Controls.Add($txtResponse)
 
 $lblAutoFill = New-Object System.Windows.Forms.Label
 $lblAutoFill.Location = New-Object System.Drawing.Point(406, 30)
@@ -88,7 +79,7 @@ $list.Add_DrawItem({
     $t = $script:Theme
     $item = $list.Items[$e.Index]
     $selected = ($e.State -band [System.Windows.Forms.DrawItemState]::Selected) -ne 0
-    $back = New-Object System.Drawing.SolidBrush($(if ($selected) { $t.Accent } else { $t.Input }))
+    $back = New-Brush $(if ($selected) { $t.Accent } else { $t.Input })
     $e.Graphics.FillRectangle($back, $e.Bounds)
     $back.Dispose()
     $color = if ($selected) { $t.AccentText }
@@ -281,8 +272,8 @@ $rcgTimer.Interval = 500
 $rcgTimer.Add_Tick({
     $state = $script:rcgShared.State
     $ready = ($state -eq 'Listening')
-    $lblAutoFill.Text = if ($ready) { "$script:Dot  Auto-fill ready" } else { "$script:Dot  $state" }
-    $lblAutoFill.ForeColor = if ($ready) { $script:Theme.Good } else { $script:Theme.Warn }
+    if ($ready) { Set-StatusLabel $lblAutoFill 'Auto-fill ready' 'Good' }
+    else        { Set-StatusLabel $lblAutoFill $state 'Warn' }
     $autoFillTip.SetToolTip($lblAutoFill, $state)
     if ($script:rcgShared.Seq -ne $script:rcgSeenSeq) {
         $script:rcgSeenSeq = $script:rcgShared.Seq

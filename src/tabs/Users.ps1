@@ -1,15 +1,10 @@
 # Tab: Users (SSCT site users and the SharedAdmin account)
 
-$tabUsers = New-Object System.Windows.Forms.TabPage; $tabUsers.Text = 'Users'
-[void]$tabs.TabPages.Add($tabUsers)
+$tabUsers = New-Page 'Users' 0xE716
 
 function Add-Field($Parent, [string]$Label, [int]$Y) {
     [void](New-Label $Parent $Label 0 $Y 'Dim')
-    $t = New-Object System.Windows.Forms.TextBox
-    $t.Location = New-Object System.Drawing.Point(0, ($Y + 19))
-    $t.Size     = New-Object System.Drawing.Size(300, 23)
-    $Parent.Controls.Add($t)
-    return $t
+    return New-TextBox $Parent 0 ($Y + 19) 300
 }
 
 # --- Create user (left) ---
@@ -34,8 +29,7 @@ $grpCreate.Controls.Add($userNote)
 $btnCreateUser = New-Button $grpCreate 'Create User' 168 320 -Primary
 
 $ssoNote = New-Object System.Windows.Forms.Label
-$ssoNote.Text      = "$script:Dot  Only SSO protocols are installed. Their users sign in with SSO, so local users are usually not needed."
-$ssoNote.ForeColor = $script:Theme.Bad
+Set-StatusLabel $ssoNote 'Only SSO protocols are installed. Their users sign in with SSO, so local users are usually not needed.' 'Bad'
 $ssoNote.Location  = New-Object System.Drawing.Point(0, 362)
 $ssoNote.Size      = New-Object System.Drawing.Size(300, 48)
 $ssoNote.Visible   = $false
