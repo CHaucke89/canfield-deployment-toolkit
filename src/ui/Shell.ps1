@@ -1,25 +1,14 @@
 # Window frame around the pages: header with the computer name, sidebar navigation, status bar and theme toggle.
 # Loaded after the tabs so it can list every page. The sidebar drives $tabs, whose own tab strip is cut off.
+# The frame sizes live in MainWindow.ps1 so the tabs can lay out against $script:PageSize.
 
-$script:SideWidth   = 180
-$script:HeaderHeight = 46
-$script:StatusHeight = 25
 $client = $form.ClientSize
 $bodyTop    = $script:HeaderHeight + 1
-$bodyHeight = $client.Height - $bodyTop - $script:StatusHeight - 1
-
-function New-Strip($Role, [int]$X, [int]$Y, [int]$Width, [int]$Height) {
-    $p = New-Object System.Windows.Forms.Panel
-    $p.Location = New-Object System.Drawing.Point($X, $Y)
-    $p.Size     = New-Object System.Drawing.Size($Width, $Height)
-    Set-Role $p $Role
-    $form.Controls.Add($p)
-    return $p
-}
+$bodyHeight = $script:PageSize.Height
 
 # --- Header ---
-$header = New-Strip 'Side' 0 0 $client.Width $script:HeaderHeight
-[void](New-Strip 'Line' 0 $script:HeaderHeight $client.Width 1)
+$header = New-Panel $form 'Side' 0 0 $client.Width $script:HeaderHeight
+[void](New-Panel $form 'Line' 0 $script:HeaderHeight $client.Width 1)
 
 $hdrApp = New-Label $header $appTitle 16 13
 $hdrApp.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 11)
@@ -31,7 +20,7 @@ $hdrComputer.Font = New-Object System.Drawing.Font('Consolas', 10.5)
 # Release builds show the tag (v2.2.1); builds after it add the commit count (v2.2.1+5); untagged builds show dev.
 if ($isExe) {
     $v = $null
-    [void][version]::TryParse([System.Diagnostics.FileVersionInfo]::GetVersionInfo($procPath).FileVersion, [ref]$v)
+    [void][version]::TryParse($toolkitVersion, [ref]$v)
     $verText = if (-not $v -or $v -eq [version]'0.0.0.0') { 'dev' }
                elseif ($v.Revision -gt 0) { 'v{0}.{1}.{2}+{3}' -f $v.Major, $v.Minor, $v.Build, $v.Revision }
                else { 'v{0}.{1}.{2}' -f $v.Major, $v.Minor, $v.Build }
@@ -41,10 +30,7 @@ if ($isExe) {
 }
 
 # --- Pages ---
-$content = New-Object System.Windows.Forms.Panel
-$content.Location = New-Object System.Drawing.Point(($script:SideWidth + 1), $bodyTop)
-$content.Size     = New-Object System.Drawing.Size(($client.Width - $script:SideWidth - 1), $bodyHeight)
-$form.Controls.Add($content)
+$content = New-Panel $form '' ($script:SideWidth + 1) $bodyTop $script:PageSize.Width $bodyHeight
 $content.Controls.Add($tabs)
 
 # Puts the TabControl's page area exactly over $content; the tab strip and page border fall outside and are clipped.
@@ -58,28 +44,20 @@ function Update-PageBounds {
 Update-PageBounds
 
 # --- Sidebar ---
-$sidebar = New-Strip 'Side' 0 $bodyTop $script:SideWidth $bodyHeight
-[void](New-Strip 'Line' $script:SideWidth $bodyTop 1 $bodyHeight)
+$sidebar = New-Panel $form 'Side' 0 $bodyTop $script:SideWidth $bodyHeight
+[void](New-Panel $form 'Line' $script:SideWidth $bodyTop 1 $bodyHeight)
 
 # Segoe MDL2 Assets ships with Windows 10 and later; without it the items show text only.
 $iconFont = New-Object System.Drawing.Font('Segoe MDL2 Assets', 11)
 if ($iconFont.Name -ne 'Segoe MDL2 Assets') { $iconFont = $null }
-$navIcons = @{
-    'Computer' = 0xE977; 'Remote Access' = 0xE8AF; 'Canfield Capture' = 0xE722; 'Users' = 0xE716
-    'Cleanup Tool' = 0xE74D; 'Summary' = 0xE9D9; 'Scripts' = 0xE943
-}
-
-$navBar = New-Object System.Windows.Forms.Panel
-$navBar.Size = New-Object System.Drawing.Size(3, 24)
-Set-Role $navBar 'Accent'
-$sidebar.Controls.Add($navBar)
+$navBar = New-Panel $sidebar 'Accent' 0 0 3 24
 
 $script:NavButtons = @()
 for ($i = 0; $i -lt $tabs.TabPages.Count; $i++) {
     $page = $tabs.TabPages[$i]
     $b = New-Object System.Windows.Forms.Button
     $b.Text      = $page.Text
-    $b.Tag       = @{ Page = $page; Icon = $navIcons[$page.Text] }
+    $b.Tag       = @{ Page = $page; Icon = $page.Tag }
     $b.Location  = New-Object System.Drawing.Point(0, (10 + $i * 38))
     $b.Size      = New-Object System.Drawing.Size($script:SideWidth, 38)
     $b.TextAlign = 'MiddleLeft'
@@ -91,8 +69,7 @@ for ($i = 0; $i -lt $tabs.TabPages.Count; $i++) {
         param($sender, $e)
         if (-not $iconFont -or -not $sender.Tag.Icon) { return }
         $r = New-Object System.Drawing.Rectangle(16, 0, 20, $sender.Height)
-        $flags = [System.Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, NoPrefix'
-        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, [string][char]$sender.Tag.Icon, $iconFont, $r, $sender.ForeColor, $flags)
+        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, [string][char]$sender.Tag.Icon, $iconFont, $r, $sender.ForeColor, $script:CenterFlags)
     })
     $sidebar.Controls.Add($b)
     $script:NavButtons += $b
@@ -129,8 +106,8 @@ $chkDark.Add_CheckedChanged({
 
 # --- Status bar ---
 $statusTop = $client.Height - $script:StatusHeight
-[void](New-Strip 'Line' 0 ($statusTop - 1) $client.Width 1)
-$statusBar = New-Strip 'Side' 0 $statusTop $client.Width $script:StatusHeight
+[void](New-Panel $form 'Line' 0 ($statusTop - 1) $client.Width 1)
+$statusBar = New-Panel $form 'Side' 0 $statusTop $client.Width $script:StatusHeight
 $statusBarText = New-Label $statusBar 'Ready' 14 5 'Dim'
 $statusBarLog = New-Label $statusBar "Log: $script:LogFile" 0 5 'Dim'
 $statusBarLog.Left = $client.Width - $statusBarLog.PreferredWidth - 14

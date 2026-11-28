@@ -62,7 +62,7 @@ function New-SharedAdmin([string]$Password) {
 
 # Windows can't reveal an account's password, so the toolkit keeps its own copy of the last Site Photographer
 # password it set: DPAPI-encrypted to this machine, in a folder only Administrators and SYSTEM can read.
-$script:PhotographerPassFile = Join-Path $env:ProgramData 'CanfieldDeploymentToolkit\Private\photographer.dat'
+$script:PhotographerPassFile = Join-Path $script:DataDir 'Private\photographer.dat'
 
 function Save-PhotographerPassword([string]$Password) {
     Add-Type -AssemblyName System.Security

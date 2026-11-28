@@ -46,7 +46,7 @@ for ($i = 0; $i -lt $tzCombo.Items.Count; $i++) {
     if ($tzCombo.Items[$i].Id -eq $tzId) { $script:tzLoading = $true; $tzCombo.SelectedIndex = $i; $script:tzLoading = $false }
 }
 $timeInfo.Text = '27 Nov 2026 09:30'
-Set-UpdateInfo '2 updates available' ($script:Theme.Warn) @(
+Set-UpdateInfo '2 updates available' 'Warn' @(
     'Cumulative Update for Windows (KB0000001)',
     'Update for Microsoft Defender Antivirus (KB0000002)')
 $btnInstallUpdates.Enabled = $true
@@ -63,8 +63,7 @@ Set-StatusLabel $lmiStatus 'LogMeIn is not installed.' $false
 Set-StatusLabel $mdmStatus 'Enrolled in Resolve MDM.' $true
 $btnMdm.Enabled = $false
 $bitLockerTimer.Enabled = $false
-$bitLockerInfo.Text = "$script:Dot  Drive C: Encrypting (42%)"
-$bitLockerInfo.ForeColor = $script:Theme.Warn
+Set-StatusLabel $bitLockerInfo 'Drive C: Encrypting (42%)' 'Warn'
 Save-ScreenShot 'remote-access'
 
 # --- Canfield Capture ---

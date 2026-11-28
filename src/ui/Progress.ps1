@@ -119,6 +119,7 @@ function Read-Text([string]$Prompt, [string]$Default) {
     $result = $dlg.ShowDialog($form)
     $text = $box.Text.Trim()
     $dlg.Dispose()
+    [void]$script:Roles.Remove($ok)
     if ($result -ne [System.Windows.Forms.DialogResult]::OK) { return $null }
     return $text
 }

@@ -1,7 +1,6 @@
 # Tab: Scripts (Canfield helper scripts installed as scheduled tasks)
 
-$tabScripts = New-Object System.Windows.Forms.TabPage; $tabScripts.Text = 'Scripts'
-[void]$tabs.TabPages.Add($tabScripts)
+$tabScripts = New-Page 'Scripts' 0xE943
 
 $rowsHeight = $script:CanfieldScripts.Count * 38
 $grpScripts = New-Section $tabScripts 'Canfield scripts' 14 ($rowsHeight + 52)
@@ -29,8 +28,7 @@ $scriptRows = foreach ($i in 0..($script:CanfieldScripts.Count - 1)) {
 }
 
 $scriptsNote = New-Object System.Windows.Forms.Label
-$scriptsNote.Text      = "$script:Dot  " + 'Script files not found. Put the Scripts folder next to CDT.exe to install them.'
-$scriptsNote.ForeColor = $script:Theme.Bad
+Set-StatusLabel $scriptsNote 'Script files not found. Put the Scripts folder next to CDT.exe to install them.' 'Bad'
 $scriptsNote.Location  = New-Object System.Drawing.Point(0, ($rowsHeight + 32))
 $scriptsNote.Size      = New-Object System.Drawing.Size($script:PageWidth, 18)
 $grpScripts.Controls.Add($scriptsNote)
@@ -68,7 +66,7 @@ function Update-ScriptsTab {
         $state = Get-CanfieldTaskState $row.Def.Task
         $hasBat = [bool](Find-ScriptsFile $row.Def.Installer)
         if ($state -eq 'Not installed' -and -not $hasBat) { $missing = $true }
-        Set-StatusLabel $row.State $state ($state -eq 'On')
+        Set-StatusLabel $row.State $state $(if ($state -eq 'On') { 'Good' } else { 'Bad' })
         $row.Install.Enabled = ($state -eq 'Not installed') -and $hasBat
         $row.On.Enabled      = ($state -eq 'Off')
         $row.Off.Enabled     = ($state -eq 'On')

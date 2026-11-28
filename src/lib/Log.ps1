@@ -2,7 +2,8 @@
 # passes $LogMaxBytes it is renamed to CDT.1.log (replacing the older one) and a fresh file starts.
 # Kept outside ProgramData\Canfield so the Cleanup Tool never touches it. Logging never throws.
 
-$script:LogDir      = Join-Path $env:ProgramData 'CanfieldDeploymentToolkit\Logs'
+$script:DataDir     = Join-Path $env:ProgramData 'CanfieldDeploymentToolkit'
+$script:LogDir      = Join-Path $script:DataDir 'Logs'
 $script:LogFile     = Join-Path $script:LogDir 'CDT.log'
 $script:LogMaxBytes = 5MB
 

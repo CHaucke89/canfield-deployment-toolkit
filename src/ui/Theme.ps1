@@ -1,9 +1,9 @@
-# Light/dark theme. $script:Theme is the active palette; tabs use its Good/Bad/Warn/Text colors for status text
-# and Set-Role (MainWindow.ps1) for anything else that isn't a default color.
+# Light/dark theme. $script:Theme is the active palette; tabs use Set-StatusLabel (MainWindow.ps1) for status text
+# and Set-Role for anything else that isn't a default color.
 # The choice is saved in settings.json under the toolkit's ProgramData folder and applied when the window loads.
 # Message boxes and file dialogs are drawn by Windows and keep the system look.
 
-$script:SettingsFile = Join-Path $env:ProgramData 'CanfieldDeploymentToolkit\settings.json'
+$script:SettingsFile = Join-Path $script:DataDir 'settings.json'
 
 # Shorthand for an RGB color in the palettes below.
 function C([int]$R, [int]$G, [int]$B) { [System.Drawing.Color]::FromArgb($R, $G, $B) }
@@ -57,6 +57,8 @@ function Add-ThemeHook([scriptblock]$Hook) { $script:ThemeHooks.Add($Hook) }
 
 # Dark scroll bars and title bar (Windows 10 1809+). Compiled on first use; older Windows just keeps the light ones.
 function Set-NativeTheme($Control, [bool]$Dark, [bool]$TitleBar = $false) {
+    # Light is the Windows default, so there is nothing to undo until Dark has been applied once.
+    if (-not $Dark -and -not ('CdtThemeNative' -as [type])) { return }
     try {
         if (-not ('CdtThemeNative' -as [type])) {
             Add-Type -Namespace '' -Name CdtThemeNative -MemberDefinition @'
@@ -77,24 +79,16 @@ function Set-NativeTheme($Control, [bool]$Dark, [bool]$TitleBar = $false) {
     } catch { }
 }
 
-# Returns the new palette's color for a status color from the old palette, or $null when it isn't one.
-function Convert-AccentColor($Color, $Old) {
-    foreach ($key in 'Good', 'Bad', 'Warn') {
-        if ($Color.ToArgb() -eq $Old[$key].ToArgb()) { return $script:Theme[$key] }
-    }
-    return $null
-}
+function New-Brush($Color) { [System.Drawing.SolidBrush]::new($Color) }
 
-$script:ThemedListViews = New-Object 'System.Collections.Generic.HashSet[object]'
-# ListViews whose rows carry a status ('Good', 'Bad', 'Warn' or $null) in Tag, drawn with a dot and a badge column.
-$script:StatusListViews = New-Object 'System.Collections.Generic.HashSet[object]'
-$script:BadgeText = @{ Good = 'OK'; Warn = 'CHECK'; Bad = 'ACTION' }
-
-function New-Brush($Color) { New-Object System.Drawing.SolidBrush($Color) }
+$script:CellFlags   = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, EndEllipsis, NoPrefix'
+$script:CenterFlags = [System.Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, NoPrefix'
 
 # ListViews are owner-drawn so the column headers match the palette (Windows always draws them light).
+# A ListView with the 'Status' role carries 'Good', 'Bad', 'Warn' or $null in each row's Tag, drawn as a dot in
+# column 0 and a badge holding column 2's text.
 function Initialize-ListViewTheme($ListView) {
-    if (-not $script:ThemedListViews.Add($ListView)) { return }
+    if ($ListView.OwnerDraw) { return }
     # A blank image list sets the row height.
     $rows = New-Object System.Windows.Forms.ImageList
     $rows.ImageSize = New-Object System.Drawing.Size(1, 20)
@@ -111,8 +105,7 @@ function Initialize-ListViewTheme($ListView) {
         $e.Graphics.FillRectangle($back, $e.Bounds)
         $e.Graphics.DrawLine($line, $e.Bounds.Left, $e.Bounds.Bottom - 1, $e.Bounds.Right, $e.Bounds.Bottom - 1)
         $text = New-Object System.Drawing.Rectangle(($e.Bounds.X + 8), $e.Bounds.Y, ($e.Bounds.Width - 10), $e.Bounds.Height)
-        $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, EndEllipsis, NoPrefix'
-        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $e.Header.Text.ToUpper(), $script:HeaderFont, $text, $t.Dim, $flags)
+        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $e.Header.Text.ToUpper(), $script:HeaderFont, $text, $t.Dim, $script:CellFlags)
         $back.Dispose(); $line.Dispose()
     })
     $ListView.Add_DrawItem({ param($sender, $e) $e.DrawDefault = $false })
@@ -125,8 +118,7 @@ function Initialize-ListViewTheme($ListView) {
         $g.FillRectangle($back, $b)
         $back.Dispose()
         $state = [string]$e.Item.Tag
-        $statusList = $script:StatusListViews.Contains($sender)
-        $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, EndEllipsis, NoPrefix'
+        $statusList = (Get-Role $sender) -eq 'Status'
         $font = if ($e.ColumnIndex -eq 1 -and $statusList) { $script:MonoFont } else { $sender.Font }
         $textX = $b.X + 8
         if ($statusList -and $e.ColumnIndex -eq 0) {
@@ -141,18 +133,17 @@ function Initialize-ListViewTheme($ListView) {
         }
         if ($statusList -and $e.ColumnIndex -eq 2) {
             if ($state) {
-                $label = $script:BadgeText[$state]
+                $label = $e.SubItem.Text
                 $size = [System.Windows.Forms.TextRenderer]::MeasureText($label, $script:HeaderFont)
                 $badge = New-Object System.Drawing.Rectangle(($b.X + 8), ($b.Y + [int](($b.Height - 16) / 2)), ($size.Width + 4), 16)
                 $fill = New-Brush $t["${state}Back"]
                 $g.FillRectangle($fill, $badge)
                 $fill.Dispose()
-                [System.Windows.Forms.TextRenderer]::DrawText($g, $label, $script:HeaderFont, $badge, $t[$state],
-                    [System.Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, NoPrefix')
+                [System.Windows.Forms.TextRenderer]::DrawText($g, $label, $script:HeaderFont, $badge, $t[$state], $script:CenterFlags)
             }
         } else {
             $rect = New-Object System.Drawing.Rectangle($textX, $b.Y, ($b.Right - $textX - 2), $b.Height)
-            [System.Windows.Forms.TextRenderer]::DrawText($g, $e.SubItem.Text, $font, $rect, $t.Text, $flags)
+            [System.Windows.Forms.TextRenderer]::DrawText($g, $e.SubItem.Text, $font, $rect, $t.Text, $script:CellFlags)
         }
         $line = New-Object System.Drawing.Pen($t.Line)
         $g.DrawLine($line, $b.Left, $b.Bottom - 1, $b.Right, $b.Bottom - 1)
@@ -177,13 +168,12 @@ function Initialize-ComboTheme($Combo) {
         if ($e.Index -lt 0) { return }
         $fore = if ($hot) { $t.AccentText } elseif ($sender.Enabled) { $t.Text } else { $t.Dim }
         $r = New-Object System.Drawing.Rectangle(($e.Bounds.X + 3), $e.Bounds.Y, ($e.Bounds.Width - 3), $e.Bounds.Height)
-        $flags = [System.Windows.Forms.TextFormatFlags]'Left, VerticalCenter, EndEllipsis, NoPrefix'
-        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.GetItemText($sender.Items[$e.Index]), $sender.Font, $r, $fore, $flags)
+        [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.GetItemText($sender.Items[$e.Index]), $sender.Font, $r, $fore, $script:CellFlags)
     })
 }
 
-# Applies the active palette to a control and all its children. $Old is the palette being replaced.
-function Set-ControlTheme($Control, $Old = $script:Theme) {
+# Applies the active palette to a control and all its children.
+function Set-ControlTheme($Control) {
     $t = $script:Theme
     $dark = $t.Dark
     $role = Get-Role $Control
@@ -192,11 +182,8 @@ function Set-ControlTheme($Control, $Old = $script:Theme) {
         $Control.FlatStyle = 'Flat'
         $Control.FlatAppearance.BorderSize = 1
         if ($role -eq 'Nav') {
-            # Shell.ps1 colors the selected item; the rest blend into the sidebar.
+            # Update-Nav (Shell.ps1) sets the other colors after every theme change.
             $Control.FlatAppearance.BorderSize = 0
-            $Control.BackColor = $t.Side
-            $Control.ForeColor = $t.Dim
-            $Control.FlatAppearance.MouseOverBackColor = $t.Hover
             $Control.FlatAppearance.MouseDownBackColor = $t.Hover
         } elseif (-not $Control.Enabled) {
             $Control.BackColor = $t.Back
@@ -235,7 +222,6 @@ function Set-ControlTheme($Control, $Old = $script:Theme) {
         }
         if ($Control -is [System.Windows.Forms.ListView]) {
             Initialize-ListViewTheme $Control
-            foreach ($item in $Control.Items) { $item.ForeColor = $t.Text }
         }
     } elseif ($Control -is [System.Windows.Forms.TabPage]) {
         $Control.UseVisualStyleBackColor = $false
@@ -255,10 +241,8 @@ function Set-ControlTheme($Control, $Old = $script:Theme) {
         }
         if ($role -in 'Dim', 'Header') { $Control.ForeColor = $t.Dim }
         elseif ($role -eq 'AccentText') { $Control.ForeColor = $t.Accent }
-        elseif ($role -notlike 'Badge*') {
-            $accent = Convert-AccentColor $Control.ForeColor $Old
-            if ($accent) { $Control.ForeColor = $accent } else { $Control.ForeColor = $t.Text }
-        }
+        elseif ($role -in 'Good', 'Bad', 'Warn') { $Control.ForeColor = $t[$role] }
+        elseif ($role -notlike 'Badge*') { $Control.ForeColor = $t.Text }
     }
 
     if ($Control -is [System.Windows.Forms.LinkLabel]) {
@@ -267,17 +251,16 @@ function Set-ControlTheme($Control, $Old = $script:Theme) {
         $Control.VisitedLinkColor = $t.Link
     }
 
-    foreach ($child in $Control.Controls) { Set-ControlTheme $child $Old }
+    foreach ($child in $Control.Controls) { Set-ControlTheme $child }
 }
 
 # Switches the whole toolkit (main window and progress window) to the named theme and saves the choice.
 function Set-Theme([string]$Name, [bool]$Save = $true) {
-    $old = $script:Theme
     $script:Theme = $script:Themes[$Name]
     $form.SuspendLayout()
     try {
-        Set-ControlTheme $form $old
-        Set-ControlTheme $status $old
+        Set-ControlTheme $form
+        Set-ControlTheme $status
         foreach ($hook in $script:ThemeHooks) { & $hook }
     } finally {
         $form.ResumeLayout()

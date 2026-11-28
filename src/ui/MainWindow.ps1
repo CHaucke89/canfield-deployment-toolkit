@@ -18,8 +18,14 @@ $script:HeaderFont = New-Object System.Drawing.Font('Segoe UI', 7.5, [System.Dra
 $script:MonoFont   = New-Object System.Drawing.Font('Consolas', 9.75)
 $form.Font = $script:UiFont
 
-# Page area is 659 x 527; sections span x 20-638.
-$script:PageWidth = 618
+# Shell.ps1 frames the pages with a header, sidebar and status bar (each with a 1 px rule); pages fill the rest.
+$script:SideWidth    = 180
+$script:HeaderHeight = 46
+$script:StatusHeight = 25
+$script:PageSize = New-Object System.Drawing.Size(($form.ClientSize.Width - $script:SideWidth - 1),
+    ($form.ClientSize.Height - $script:HeaderHeight - $script:StatusHeight - 2))
+# Sections span x 20 to 21 px short of the page's right edge.
+$script:PageWidth = $script:PageSize.Width - 41
 $script:Dot = [string][char]0x25CF
 
 # The pages live in a TabControl whose tab strip is cut off by Shell.ps1, so tabs keep using $tabs.SelectedTab.
@@ -28,8 +34,17 @@ $tabs.Appearance = 'FlatButtons'
 $tabs.SizeMode   = 'Fixed'
 $tabs.ItemSize   = New-Object System.Drawing.Size(0, 1)
 
+# Adds a page; Shell.ps1 lists it in the sidebar with the Segoe MDL2 Assets glyph $Icon.
+function New-Page([string]$Text, [int]$Icon) {
+    $p = New-Object System.Windows.Forms.TabPage
+    $p.Text = $Text
+    $p.Tag  = $Icon
+    [void]$tabs.TabPages.Add($p)
+    return $p
+}
+
 # Theme roles for controls that don't take the default colors (see Set-ControlTheme): Primary, Nav, Dim, Header,
-# AccentText, Accent, Line, Side, Surface, BadgeGood, BadgeBad, BadgeWarn.
+# AccentText, Accent, Line, Side, Surface, Status, Good, Bad, Warn, BadgeGood, BadgeBad, BadgeWarn.
 $script:Roles = New-Object 'System.Collections.Generic.Dictionary[object,string]'
 function Set-Role($Control, [string]$Role) {
     $script:Roles[$Control] = $Role
@@ -39,6 +54,15 @@ function Get-Role($Control) {
     $r = $null
     if ($script:Roles.TryGetValue($Control, [ref]$r)) { return $r }
     return ''
+}
+
+function New-Panel($Parent, [string]$Role, [int]$X, [int]$Y, [int]$Width, [int]$Height) {
+    $p = New-Object System.Windows.Forms.Panel
+    $p.Location = New-Object System.Drawing.Point($X, $Y)
+    $p.Size     = New-Object System.Drawing.Size($Width, $Height)
+    if ($Role) { Set-Role $p $Role }
+    $Parent.Controls.Add($p)
+    return $p
 }
 
 function New-Label($Parent, [string]$Text, [int]$X, [int]$Y, [string]$Role) {
@@ -65,20 +89,22 @@ function New-Button($Parent, [string]$Text, [int]$X, [int]$Y, [int]$Width = 132,
 
 function Set-Mono($Control) { $Control.Font = $script:MonoFont }
 
+function New-TextBox($Parent, [int]$X, [int]$Y, [int]$Width, [switch]$Mono) {
+    $t = New-Object System.Windows.Forms.TextBox
+    $t.Location = New-Object System.Drawing.Point($X, $Y)
+    $t.Size     = New-Object System.Drawing.Size($Width, 23)
+    if ($Mono) { Set-Mono $t }
+    $Parent.Controls.Add($t)
+    return $t
+}
+
 # Section on a page: a small uppercase heading with a rule, replacing the old group boxes. Content starts at y 26.
 function New-Section($Page, [string]$Text, [int]$Y, [int]$Height, [int]$X = 20, [int]$Width = $script:PageWidth) {
-    $p = New-Object System.Windows.Forms.Panel
-    $p.Location = New-Object System.Drawing.Point($X, $Y)
-    $p.Size     = New-Object System.Drawing.Size($Width, $Height)
-    $Page.Controls.Add($p)
+    $p = New-Panel $Page '' $X $Y $Width $Height
     $h = New-Label $p $Text.ToUpper() 0 0 'Header'
     $h.Font = $script:HeaderFont
-    $line = New-Object System.Windows.Forms.Panel
     $lineX = $h.PreferredWidth + 6
-    $line.Location = New-Object System.Drawing.Point($lineX, 8)
-    $line.Size     = New-Object System.Drawing.Size(($Width - $lineX), 1)
-    Set-Role $line 'Line'
-    $p.Controls.Add($line)
+    [void](New-Panel $p 'Line' $lineX 8 ($Width - $lineX) 1)
     return $p
 }
 
@@ -93,8 +119,9 @@ function Set-EnterButton($TextBox, $Button) {
     })
 }
 
-# Green for good, red otherwise, with a status dot.
-function Set-StatusLabel($Label, [string]$Text, [bool]$Good) {
-    $Label.Text      = "$script:Dot  $Text"
-    $Label.ForeColor = if ($Good) { $script:Theme.Good } else { $script:Theme.Bad }
+# Status text with a dot, in the theme's color for $State ('Good', 'Warn' or 'Bad'). No $State gives plain text.
+function Set-StatusLabel($Label, [string]$Text, [string]$State) {
+    Set-Role $Label $State
+    $Label.Text      = if ($State) { "$script:Dot  $Text" } else { $Text }
+    $Label.ForeColor = if ($State) { $script:Theme[$State] } else { $script:Theme.Text }
 }
