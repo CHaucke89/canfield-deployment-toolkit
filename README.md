@@ -4,6 +4,10 @@
 [![Latest release](https://img.shields.io/github/v/release/chaucke89/canfield-deployment-toolkit)](https://github.com/chaucke89/canfield-deployment-toolkit/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+<p align="center">
+  <img src="images/01-computer.png" width="500" alt="Canfield Deployment Toolkit showing the Computer page in the dark theme">
+</p>
+
 Windows deployment toolkit for common machine-setup tasks in one GUI:
 
 - Rename the computer, set the `Site Photographer` password, set the time zone and sync the clock, and check for and install Windows updates.
